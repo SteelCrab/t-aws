@@ -33,19 +33,31 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: t-aws-windows-x86_64.exe
+          - name: Windows-arm64
+            os: windows-arm64
+            target: aarch64-pc-windows-msvc
+            artifact: t-aws-windows-arm64.exe
           
           # Linux
-          - name: Linux-x86_64
+          - name: Linux-x86_64 (glibc)
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: t-aws-linux-x86_64
-          - name: Linux-arm64
+          - name: Linux-x86_64 (musl)
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact: t-aws-linux-musl-x86_64
+          - name: Linux-arm64 (glibc)
             os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
             artifact: t-aws-linux-arm64
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install musl-tools
+        if: contains(matrix.platform.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable

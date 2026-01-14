@@ -13,7 +13,7 @@ crossterm = "0.28"
 
 # Async runtime & HTTP
 tokio = { version = "1", features = ["full"] }
-reqwest = { version = "0.12", features = ["stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["stream", "rustls-tls"] }
 futures-util = "0.3"
 
 # Archive handling
