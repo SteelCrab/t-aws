@@ -57,6 +57,9 @@ pub async fn show_resources(region: Option<String>) -> Result<()> {
     // RDS Instances
     show_rds_instances(&config).await?;
 
+    // VPC Resources
+    show_vpc_resources(&config).await?;
+
     println!("╚══════════════════════════════════════════════════════════════════╝");
     println!();
 
@@ -309,6 +312,123 @@ async fn show_rds_instances(config: &aws_config::SdkConfig) -> Result<()> {
             println!(
                 "║  ... and {} more                                              ║",
                 instances.len() - 10
+            );
+        }
+    }
+
+    Ok(())
+}
+
+async fn show_vpc_resources(config: &aws_config::SdkConfig) -> Result<()> {
+    let client = Ec2Client::new(config);
+
+    // 1. VPCs
+    let vpc_resp = client
+        .describe_vpcs()
+        .send()
+        .await
+        .map_err(|e| AppError::AwsError(e.to_string()))?;
+    let vpcs = vpc_resp.vpcs();
+
+    println!("╠══════════════════════════════════════════════════════════════════╣");
+    println!(
+        "║  VPCs ({})                                                       ",
+        vpcs.len()
+    );
+    println!("╠══════════════════════════════════════════════════════════════════╣");
+
+    if vpcs.is_empty() {
+        println!("║  (no VPCs)                                                       ║");
+    } else {
+        for vpc in vpcs.iter().take(5) {
+            let id = vpc.vpc_id().unwrap_or("-");
+            let cidr = vpc.cidr_block().unwrap_or("-");
+            let state = vpc.state().map(|s| s.as_str()).unwrap_or("-");
+            let name = vpc
+                .tags()
+                .iter()
+                .find(|tag| tag.key() == Some("Name"))
+                .and_then(|tag| tag.value())
+                .unwrap_or("-");
+
+            println!(
+                "║  vpc  {:20} │ {:15} │ {:8} │ {:15} ║",
+                truncate(id, 20),
+                truncate(cidr, 15),
+                truncate(state, 8),
+                truncate(name, 15)
+            );
+        }
+    }
+
+    // 2. Subnets
+    let subnet_resp = client
+        .describe_subnets()
+        .send()
+        .await
+        .map_err(|e| AppError::AwsError(e.to_string()))?;
+    let subnets = subnet_resp.subnets();
+
+    println!("╠══════════════════════════════════════════════════════════════════╣");
+    println!(
+        "║  Subnets ({})                                                    ",
+        subnets.len()
+    );
+    println!("╠══════════════════════════════════════════════════════════════════╣");
+
+    if subnets.is_empty() {
+        println!("║  (no Subnets)                                                    ║");
+    } else {
+        for subnet in subnets.iter().take(5) {
+            let id = subnet.subnet_id().unwrap_or("-");
+            let cidr = subnet.cidr_block().unwrap_or("-");
+            let az = subnet.availability_zone().unwrap_or("-");
+            let name = subnet
+                .tags()
+                .iter()
+                .find(|tag| tag.key() == Some("Name"))
+                .and_then(|tag| tag.value())
+                .unwrap_or("-");
+
+            println!(
+                "║  sub  {:20} │ {:15} │ {:10} │ {:12} ║",
+                truncate(id, 20),
+                truncate(cidr, 15),
+                truncate(az, 10),
+                truncate(name, 12)
+            );
+        }
+    }
+
+    // 3. Security Groups
+    let sg_resp = client
+        .describe_security_groups()
+        .send()
+        .await
+        .map_err(|e| AppError::AwsError(e.to_string()))?;
+    let sgs = sg_resp.security_groups();
+
+    println!("╠══════════════════════════════════════════════════════════════════╣");
+    println!(
+        "║  Security Groups ({})                                            ",
+        sgs.len()
+    );
+    println!("╠══════════════════════════════════════════════════════════════════╣");
+
+    if sgs.is_empty() {
+        println!("║  (no Security Groups)                                            ║");
+    } else {
+        for sg in sgs.iter().take(5) {
+            let id = sg.group_id().unwrap_or("-");
+            let name = sg.group_name().unwrap_or("-");
+            let vpc_id = sg.vpc_id().unwrap_or("-");
+            // let desc = sg.description().unwrap_or("-");
+
+            println!(
+                "║  sg   {:20} │ {:20} │ {:12} ║",
+                truncate(id, 20),
+                truncate(name, 20),
+                truncate(vpc_id, 12)
             );
         }
     }
