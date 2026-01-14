@@ -1,15 +1,15 @@
 [🇺🇸 English](README.md) | [🇰🇷 한국어](README.ko.md)
 
-# AWS CLI Installer TUI
+# AWS CLI Installer & Tools
 
-A cross-platform terminal UI installer for AWS CLI v2, built with Rust.
+A cross-platform AWS CLI v2 installer and quick reference tool, built with Rust.
 
 ## Features
 
 - 🖥️ **Cross-platform**: macOS, Windows, Linux (x86_64, arm64)
-- 📥 **Install**: Download and install AWS CLI v2
-- 🗑️ **Uninstall**: Remove AWS CLI from your system
-- 📊 **Progress bar**: Real-time download progress
+- 📥 **Install/Uninstall**: AWS CLI v2 with progress bar
+- 📖 **Cheatsheets**: Quick reference for S3, EC2, IAM commands
+- 🌏 **Live Resources**: View EC2 instances & S3 buckets in real-time
 
 ## Installation
 
@@ -22,12 +22,32 @@ cargo build --release
 
 ## Usage
 
-1. Run the application
-2. Press **Enter** at welcome screen
-3. Select action:
-   - **[1]** Install AWS CLI
-   - **[2]** Uninstall AWS CLI
-4. Follow the prompts
+### TUI Mode (Interactive)
+```bash
+./t-aws
+# Press Enter → Select [1] Install or [2] Uninstall
+```
+
+### CLI Mode (Direct)
+```bash
+./t-aws -i              # Install AWS CLI
+./t-aws -u              # Uninstall AWS CLI
+```
+
+### Cheatsheets
+```bash
+./t-aws s3              # S3 command reference
+./t-aws ec2             # EC2 command reference
+./t-aws iam             # IAM command reference
+```
+
+### Live AWS Resources
+```bash
+./t-aws resources                    # Current region
+./t-aws resources -r ap-northeast-2  # Specific region
+```
+
+> ⚠️ `resources` command requires AWS credentials (`aws configure`)
 
 ## Supported Platforms
 
