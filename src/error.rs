@@ -20,9 +20,6 @@ pub enum AppError {
     #[error("Command execution failed: {command} - {message}")]
     CommandError { command: String, message: String },
 
-    #[error("User cancelled operation")]
-    UserCancelled,
-
     #[error("AWS Error: {0}")]
     AwsError(String),
 }

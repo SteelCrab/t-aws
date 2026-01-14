@@ -1,11 +1,11 @@
 pub mod widgets;
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
-    Frame,
 };
 
 use crate::app::{AppState, Screen};
@@ -46,7 +46,6 @@ fn render_content(frame: &mut Frame, area: Rect, state: &AppState) {
     let content = match &state.screen {
         Screen::Welcome => render_welcome(),
         Screen::Menu => render_menu(),
-        Screen::Detecting => render_detecting(),
         Screen::Confirm => render_confirm(state),
         Screen::Downloading => render_downloading(frame, area, state),
         Screen::Installing => render_installing(),
@@ -109,21 +108,6 @@ fn render_menu() -> Paragraph<'static> {
         Line::from(Span::styled(
             "Press 1 or 2 to select, Q to quit",
             Style::default().fg(Color::Yellow),
-        )),
-    ];
-    Paragraph::new(text)
-        .alignment(Alignment::Center)
-        .block(Block::default().borders(Borders::ALL))
-}
-
-fn render_detecting() -> Paragraph<'static> {
-    let text = vec![
-        Line::from(""),
-        Line::from(Span::styled(
-            "🔍 Detecting platform...",
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
         )),
     ];
     Paragraph::new(text)

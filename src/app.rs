@@ -15,7 +15,6 @@ pub enum Action {
 pub enum Screen {
     Welcome,
     Menu,
-    Detecting,
     Confirm,
     Downloading,
     Installing,
