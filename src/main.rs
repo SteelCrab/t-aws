@@ -1,26 +1,96 @@
 mod app;
+mod cli;
 mod download;
 mod error;
 mod install;
 mod platform;
+mod resources;
 mod ui;
 
 use std::io;
 use std::sync::Arc;
 use std::time::Duration;
 
+use clap::Parser;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{Terminal, backend::CrosstermBackend};
 
 use app::{Action, App, Screen};
+use cli::{Cli, Command};
 use error::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let cli = Cli::parse();
+
+    // Handle subcommands first
+    if let Some(command) = cli.command {
+        match command {
+            Command::S3 => {
+                cli::print_s3_cheatsheet();
+                return Ok(());
+            }
+            Command::Ec2 => {
+                cli::print_ec2_cheatsheet();
+                return Ok(());
+            }
+            Command::Iam => {
+                cli::print_iam_cheatsheet();
+                return Ok(());
+            }
+            Command::Resources { region } => {
+                if let Err(e) = resources::show_resources(region).await {
+                    eprintln!("❌ Error: {}", e);
+                    std::process::exit(1);
+                }
+                return Ok(());
+            }
+        }
+    }
+
+    // Handle --install flag
+    if cli.install {
+        let platform = platform::Platform::detect()?;
+        println!("🔍 Platform: {}", platform);
+        println!("📥 Downloading AWS CLI...");
+
+        let path = download::download_installer(&platform, |p| {
+            if let Some(pct) = p.percentage() {
+                print!("\r📥 Downloading... {:.0}%", pct);
+                let _ = io::Write::flush(&mut io::stdout());
+            }
+        })
+        .await?;
+        println!("\n✅ Download complete!");
+
+        println!("⚙️  Installing AWS CLI...");
+        install::install_aws_cli(&platform, &path)?;
+
+        match install::verify_installation() {
+            Ok(version) => println!("🎉 Installed: {}", version),
+            Err(e) => println!("⚠️  Install succeeded but verification failed: {}", e),
+        }
+        return Ok(());
+    }
+
+    // Handle --uninstall flag
+    if cli.uninstall {
+        let platform = platform::Platform::detect()?;
+        println!("🗑️  Uninstalling AWS CLI...");
+        install::uninstall_aws_cli(&platform)?;
+        println!("✅ Uninstall complete!");
+        return Ok(());
+    }
+
+    // Default: Run TUI
+    run_tui().await
+}
+
+async fn run_tui() -> Result<()> {
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();

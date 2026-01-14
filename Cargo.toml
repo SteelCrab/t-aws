@@ -1,9 +1,13 @@
 [package]
 name = "t-aws"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# TUI
 ratatui = "0.29"
 crossterm = "0.28"
 
@@ -20,3 +24,8 @@ sysinfo = "0.32"
 
 # Error handling
 thiserror = "2"
+
+# AWS SDK
+aws-config = "1"
+aws-sdk-ec2 = "1"
+aws-sdk-s3 = "1"
