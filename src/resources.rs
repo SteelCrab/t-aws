@@ -238,31 +238,31 @@ fn truncate(s: &str, max_len: usize) -> String {
     }
 }
 
+/// Displays a summary table of RDS DB instances for the provided AWS SDK configuration.
+///
+/// Prints up to 10 DB instances showing a status icon, identifier, engine, instance class, and status, and prints a summary line if more instances exist. AWS SDK errors from the DescribeDBInstances call are converted to `AppError::AwsError` and returned.
+///
+/// # Parameters
+///
+/// - `config`: AWS SDK configuration used to create the RDS client.
+///
+/// # Returns
+///
+/// `Ok(())` on success; `Err(AppError::AwsError(_))` if the AWS DescribeDBInstances call fails.
+///
+/// # Examples
+///
+/// ```no_run
+/// # use aws_config;
+/// # use tokio;
+/// # async fn try_example() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = aws_config::load_from_env().await;
+/// // `show_rds_clusters` is async and returns a Result<(), AppError>
+/// show_rds_clusters(&config).await?;
+/// # Ok(())
+/// # }
+/// ```
 async fn show_rds_instances(config: &aws_config::SdkConfig) -> Result<()> {
-    /// Displays a summary table of RDS DB instances for the provided AWS SDK configuration.
-    ///
-    /// Prints up to 10 DB instances showing a status icon, identifier, engine, instance class, and status, and prints a summary line if more instances exist. AWS SDK errors from the DescribeDBInstances call are converted to `AppError::AwsError` and returned.
-    ///
-    /// # Parameters
-    ///
-    /// - `config`: AWS SDK configuration used to create the RDS client.
-    ///
-    /// # Returns
-    ///
-    /// `Ok(())` on success; `Err(AppError::AwsError(_))` if the AWS DescribeDBInstances call fails.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use aws_config;
-    /// # use tokio;
-    /// # async fn try_example() -> Result<(), Box<dyn std::error::Error>> {
-    /// let config = aws_config::load_from_env().await;
-    /// // `show_rds_clusters` is async and returns a Result<(), AppError>
-    /// show_rds_clusters(&config).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
     let client = RdsClient::new(config);
 
     // Get DB Instances
