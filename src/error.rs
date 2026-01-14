@@ -22,6 +22,9 @@ pub enum AppError {
 
     #[error("User cancelled operation")]
     UserCancelled,
+
+    #[error("AWS Error: {0}")]
+    AwsError(String),
 }
 
 pub type Result<T> = std::result::Result<T, AppError>;
