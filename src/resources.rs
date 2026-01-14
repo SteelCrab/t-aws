@@ -1,5 +1,6 @@
 use aws_config::BehaviorVersion;
 use aws_sdk_ec2::Client as Ec2Client;
+use aws_sdk_rds::Client as RdsClient;
 use aws_sdk_s3::Client as S3Client;
 
 pub async fn show_resources(region: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
@@ -30,6 +31,9 @@ pub async fn show_resources(region: Option<String>) -> Result<(), Box<dyn std::e
 
     // S3 Buckets
     show_s3_buckets(&config).await?;
+
+    // RDS Clusters
+    show_rds_clusters(&config).await?;
 
     println!("╚══════════════════════════════════════════════════════════════════╝");
     println!();
@@ -154,4 +158,56 @@ fn truncate(s: &str, max_len: usize) -> String {
     } else {
         format!("{:width$}", s, width = max_len)
     }
+}
+
+async fn show_rds_clusters(
+    config: &aws_config::SdkConfig,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let client = RdsClient::new(config);
+
+    // Get DB Instances
+    let resp = client.describe_db_instances().send().await?;
+    let instances: Vec<_> = resp.db_instances().iter().collect();
+
+    println!("╠══════════════════════════════════════════════════════════════════╣");
+    println!(
+        "║  RDS Instances ({})                                              ",
+        instances.len()
+    );
+    println!("╠══════════════════════════════════════════════════════════════════╣");
+
+    if instances.is_empty() {
+        println!("║  (no RDS instances)                                              ║");
+    } else {
+        for db in instances.iter().take(10) {
+            let id = db.db_instance_identifier().unwrap_or("-");
+            let engine = db.engine().unwrap_or("-");
+            let class = db.db_instance_class().unwrap_or("-");
+            let status = db.db_instance_status().unwrap_or("-");
+
+            let status_icon = match status {
+                "available" => "🟢",
+                "stopped" => "🔴",
+                "starting" | "stopping" | "modifying" => "🟡",
+                _ => "⚪",
+            };
+
+            println!(
+                "║  {} {:25} │ {:12} │ {:12} │ {:8} ║",
+                status_icon,
+                truncate(id, 25),
+                truncate(engine, 12),
+                truncate(class, 12),
+                truncate(status, 8)
+            );
+        }
+        if instances.len() > 10 {
+            println!(
+                "║  ... and {} more                                              ║",
+                instances.len() - 10
+            );
+        }
+    }
+
+    Ok(())
 }

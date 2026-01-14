@@ -2,10 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, feat/*]
     tags: ['v*']
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -51,6 +51,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform.target }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.platform.target }}
 
       - name: Build
         run: cargo build --release --target ${{ matrix.platform.target }}
