@@ -2,6 +2,8 @@
 
 [🇺🇸 English](README.md) | [🇰🇷 한국어](README.ko.md)
 
+![alt text](images/emd-1.png)
+
 `emd` is a Terminal User Interface (TUI) application designed to explore your AWS resources and generate comprehensive Markdown documentation.
 
 ## Features
