@@ -9,6 +9,7 @@ pub enum ResourceType {
     Network,
     SecurityGroup,
     LoadBalancer,
+    Ecr,
 }
 
 impl ResourceType {
@@ -18,6 +19,7 @@ impl ResourceType {
             ResourceType::Network => "Network",
             ResourceType::SecurityGroup => "Security Group",
             ResourceType::LoadBalancer => "Load Balancer",
+            ResourceType::Ecr => "ECR",
         }
     }
 }

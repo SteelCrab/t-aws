@@ -2,7 +2,9 @@ mod app;
 mod aws_cli;
 mod blueprint;
 mod handler;
+mod i18n;
 mod output;
+mod settings;
 mod ui;
 
 use crossterm::{

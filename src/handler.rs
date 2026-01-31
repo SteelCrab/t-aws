@@ -1,4 +1,4 @@
-use crate::app::{App, LoadingTask, REGIONS, SERVICES, Screen};
+use crate::app::{App, LoadingTask, REGIONS, SERVICE_KEYS, Screen};
 use crate::aws_cli::{self, NetworkDetail};
 use crate::blueprint::{BlueprintResource, ResourceType};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
@@ -16,7 +16,9 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         Screen::VpcSelect => handle_vpc_select(app, key),
         Screen::SecurityGroupSelect => handle_security_group_select(app, key),
         Screen::LoadBalancerSelect => handle_load_balancer_select(app, key),
+        Screen::EcrSelect => handle_ecr_select(app, key),
         Screen::Preview => handle_preview(app, key),
+        Screen::Settings => handle_settings(app, key),
     }
 }
 
@@ -75,12 +77,12 @@ pub fn process_loading(app: &mut App) {
     match app.loading_task.clone() {
         LoadingTask::RefreshEc2 => {
             app.instances = aws_cli::list_instances();
-            app.message = "새로고침 완료".to_string();
+            app.message = app.i18n.refresh_complete().to_string();
             finish_loading(app);
         }
         LoadingTask::RefreshVpc => {
             app.vpcs = aws_cli::list_vpcs();
-            app.message = "새로고침 완료".to_string();
+            app.message = app.i18n.refresh_complete().to_string();
             finish_loading(app);
         }
         LoadingTask::RefreshPreview => {
@@ -112,12 +114,13 @@ pub fn process_loading(app: &mut App) {
                         .get(app.selected_index)
                         .map(|sg| sg.id.as_str())
                         .unwrap_or(""),
-                ) {
-                    app.preview_content = new_detail.to_markdown();
-                    app.preview_filename = format!("{}.md", new_detail.name);
-                    app.sg_detail = Some(new_detail);
-                }
-            app.message = "새로고침 완료".to_string();
+                )
+            {
+                app.preview_content = new_detail.to_markdown();
+                app.preview_filename = format!("{}.md", new_detail.name);
+                app.sg_detail = Some(new_detail);
+            }
+            app.message = app.i18n.refresh_complete().to_string();
             finish_loading(app);
         }
         LoadingTask::LoadEc2 => {
@@ -146,7 +149,7 @@ pub fn process_loading(app: &mut App) {
         }
         LoadingTask::RefreshSecurityGroup => {
             app.security_groups = aws_cli::list_security_groups();
-            app.message = "새로고침 완료".to_string();
+            app.message = app.i18n.refresh_complete().to_string();
             finish_loading(app);
         }
         LoadingTask::LoadSecurityGroup => {
@@ -166,7 +169,7 @@ pub fn process_loading(app: &mut App) {
         }
         LoadingTask::RefreshLoadBalancer => {
             app.load_balancers = aws_cli::list_load_balancers();
-            app.message = "새로고침 완료".to_string();
+            app.message = app.i18n.refresh_complete().to_string();
             finish_loading(app);
         }
         LoadingTask::LoadLoadBalancer => {
@@ -180,6 +183,26 @@ pub fn process_loading(app: &mut App) {
                 app.preview_content = detail.to_markdown();
                 app.preview_filename = format!("{}.md", detail.name);
                 app.lb_detail = Some(detail);
+                app.screen = Screen::Preview;
+            }
+            finish_loading(app);
+        }
+        LoadingTask::RefreshEcr => {
+            app.ecr_repositories = aws_cli::list_ecr_repositories();
+            app.message = app.i18n.refresh_complete().to_string();
+            finish_loading(app);
+        }
+        LoadingTask::LoadEcr => {
+            app.ecr_repositories = aws_cli::list_ecr_repositories();
+            app.selected_index = 0;
+            app.screen = Screen::EcrSelect;
+            finish_loading(app);
+        }
+        LoadingTask::LoadEcrDetail(name) => {
+            if let Some(detail) = aws_cli::get_ecr_detail(&name) {
+                app.preview_content = detail.to_markdown();
+                app.preview_filename = format!("{}.md", detail.name);
+                app.ecr_detail = Some(detail);
                 app.screen = Screen::Preview;
             }
             finish_loading(app);
@@ -273,6 +296,9 @@ fn process_blueprint_resources(app: &mut App, current_index: usize) {
             .unwrap_or_else(|| {
                 format!("## Load Balancer: {} (조회 실패)\n", resource.resource_name)
             }),
+        ResourceType::Ecr => aws_cli::get_ecr_detail(&resource.resource_id)
+            .map(|d| d.to_markdown())
+            .unwrap_or_else(|| format!("## ECR: {} (조회 실패)\n", resource.resource_name)),
     };
 
     app.blueprint_markdown_parts.push(markdown);
@@ -375,7 +401,7 @@ fn start_loading(app: &mut App, task: LoadingTask) {
     app.loading = true;
     app.loading_progress.reset();
     app.loading_task = task;
-    app.message = "로딩 중...".to_string();
+    app.message = app.i18n.loading_msg().to_string();
 }
 
 fn handle_login(app: &mut App, key: KeyEvent) {
@@ -427,7 +453,7 @@ fn handle_blueprint_select(app: &mut App, key: KeyEvent) {
                         app.blueprint_markdown_parts.clear();
                         start_loading(app, LoadingTask::LoadBlueprintResources(0));
                     } else {
-                        app.message = "리소스가 없습니다".to_string();
+                        app.message = app.i18n.no_resources().to_string();
                     }
                 }
             }
@@ -446,6 +472,12 @@ fn handle_blueprint_select(app: &mut App, key: KeyEvent) {
             // 단일 리소스 모드로 전환 (리전 선택)
             app.blueprint_mode = false;
             app.screen = Screen::RegionSelect;
+        }
+        KeyCode::Right | KeyCode::Char('l') | KeyCode::Tab => {
+            // Switch to Settings tab
+            app.selected_tab = 1;
+            app.selected_setting = 0;
+            app.screen = Screen::Settings;
         }
         KeyCode::Char('q') => app.running = false,
         _ => {}
@@ -505,7 +537,7 @@ fn handle_blueprint_detail(app: &mut App, key: KeyEvent) {
                     app.blueprint_markdown_parts.clear();
                     start_loading(app, LoadingTask::LoadBlueprintResources(0));
                 } else {
-                    app.message = "리소스가 없습니다".to_string();
+                    app.message = app.i18n.no_resources().to_string();
                 }
             }
         }
@@ -620,6 +652,7 @@ fn handle_region_select(app: &mut App, key: KeyEvent) {
 }
 
 fn handle_service_select(app: &mut App, key: KeyEvent) {
+    let total_items = SERVICE_KEYS.len() + 1; // +1 for exit
     match key.code {
         KeyCode::Up | KeyCode::Char('k') => {
             if app.selected_service > 0 {
@@ -627,7 +660,7 @@ fn handle_service_select(app: &mut App, key: KeyEvent) {
             }
         }
         KeyCode::Down | KeyCode::Char('j') => {
-            if app.selected_service < SERVICES.len() - 1 {
+            if app.selected_service < total_items - 1 {
                 app.selected_service += 1;
             }
         }
@@ -636,7 +669,9 @@ fn handle_service_select(app: &mut App, key: KeyEvent) {
             1 => start_loading(app, LoadingTask::LoadVpc),
             2 => start_loading(app, LoadingTask::LoadSecurityGroup),
             3 => start_loading(app, LoadingTask::LoadLoadBalancer),
-            4 => {
+            4 => start_loading(app, LoadingTask::LoadEcr),
+            5 => {
+                // Exit
                 if app.blueprint_mode {
                     app.screen = Screen::BlueprintDetail;
                 } else {
@@ -645,6 +680,12 @@ fn handle_service_select(app: &mut App, key: KeyEvent) {
             }
             _ => {}
         },
+        KeyCode::Right | KeyCode::Char('l') | KeyCode::Tab => {
+            // Switch to Settings tab
+            app.selected_tab = 1;
+            app.selected_setting = 0;
+            app.screen = Screen::Settings;
+        }
         KeyCode::Char('q') => app.running = false,
         KeyCode::Esc => app.screen = Screen::RegionSelect,
         _ => {}
@@ -759,6 +800,33 @@ fn handle_load_balancer_select(app: &mut App, key: KeyEvent) {
     }
 }
 
+fn handle_ecr_select(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.selected_index > 0 {
+                app.selected_index -= 1;
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.selected_index < app.ecr_repositories.len().saturating_sub(1) {
+                app.selected_index += 1;
+            }
+        }
+        KeyCode::Enter => {
+            if app.selected_index < app.ecr_repositories.len() {
+                let name = app.ecr_repositories[app.selected_index].id.clone();
+                start_loading(app, LoadingTask::LoadEcrDetail(name));
+            }
+        }
+        KeyCode::Char('r') => {
+            start_loading(app, LoadingTask::RefreshEcr);
+        }
+        KeyCode::Esc => app.screen = Screen::ServiceSelect,
+        KeyCode::Char('q') => app.running = false,
+        _ => {}
+    }
+}
+
 fn handle_preview(app: &mut App, key: KeyEvent) {
     let content_lines = app.preview_content.lines().count() as u16;
 
@@ -799,24 +867,26 @@ fn handle_preview(app: &mut App, key: KeyEvent) {
                 && let (Some(resource_type), Some((resource_id, resource_name))) = (
                     app.get_current_resource_type(),
                     app.get_current_resource_info(),
-                ) {
-                    let region = app.get_current_region();
-                    let resource = BlueprintResource {
-                        resource_type,
-                        region,
-                        resource_id,
-                        resource_name,
-                    };
-                    app.add_resource_to_current_blueprint(resource);
+                )
+            {
+                let region = app.get_current_region();
+                let resource = BlueprintResource {
+                    resource_type,
+                    region,
+                    resource_id,
+                    resource_name,
+                };
+                app.add_resource_to_current_blueprint(resource);
 
-                    // 리소스 정리 후 블루프린트 상세로 돌아가기
-                    app.ec2_detail = None;
-                    app.network_detail = None;
-                    app.sg_detail = None;
-                    app.lb_detail = None;
-                    app.preview_scroll = 0;
-                    app.screen = Screen::BlueprintDetail;
-                }
+                // 리소스 정리 후 블루프린트 상세로 돌아가기
+                app.ec2_detail = None;
+                app.network_detail = None;
+                app.sg_detail = None;
+                app.lb_detail = None;
+                app.ecr_detail = None;
+                app.preview_scroll = 0;
+                app.screen = Screen::BlueprintDetail;
+            }
         }
         KeyCode::Esc => {
             app.preview_scroll = 0;
@@ -826,6 +896,7 @@ fn handle_preview(app: &mut App, key: KeyEvent) {
                 app.network_detail = None;
                 app.sg_detail = None;
                 app.lb_detail = None;
+                app.ecr_detail = None;
                 app.screen = Screen::BlueprintDetail;
             } else if app.ec2_detail.is_some() {
                 app.ec2_detail = None;
@@ -839,9 +910,39 @@ fn handle_preview(app: &mut App, key: KeyEvent) {
             } else if app.lb_detail.is_some() {
                 app.lb_detail = None;
                 app.screen = Screen::LoadBalancerSelect;
+            } else if app.ecr_detail.is_some() {
+                app.ecr_detail = None;
+                app.screen = Screen::EcrSelect;
             } else {
                 app.screen = Screen::ServiceSelect;
             }
+        }
+        KeyCode::Char('q') => app.running = false,
+        _ => {}
+    }
+}
+
+fn handle_settings(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.selected_setting > 0 {
+                app.selected_setting -= 1;
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            // Currently only 1 setting (language), so max index is 0
+            // Will be expanded when more settings are added
+        }
+        KeyCode::Enter | KeyCode::Char(' ') => {
+            // Toggle current setting
+            if app.selected_setting == 0 {
+                app.toggle_language();
+            }
+        }
+        KeyCode::Left | KeyCode::Char('h') | KeyCode::Tab | KeyCode::Esc => {
+            // Switch back to Main tab
+            app.selected_tab = 0;
+            app.screen = Screen::BlueprintSelect;
         }
         KeyCode::Char('q') => app.running = false,
         _ => {}
