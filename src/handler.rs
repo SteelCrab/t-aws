@@ -935,9 +935,8 @@ fn handle_settings(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Enter | KeyCode::Char(' ') => {
             // Toggle current setting
-            match app.selected_setting {
-                0 => app.toggle_language(),
-                _ => {}
+            if app.selected_setting == 0 {
+                app.toggle_language();
             }
         }
         KeyCode::Left | KeyCode::Char('h') | KeyCode::Tab | KeyCode::Esc => {
