@@ -28,3 +28,7 @@ cargo build --release
 Blueprints are saved locally in:
 `~/.emd/blueprints.json`
 
+
+## Coffe ☕️
+
+https://ko-fi.com/pistacrab
