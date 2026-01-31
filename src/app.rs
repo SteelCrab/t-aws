@@ -344,35 +344,37 @@ impl App {
             return false;
         }
         if let Some(ref mut blueprint) = self.current_blueprint
-            && index < blueprint.resources.len() {
-                blueprint.resources.swap(index, index - 1);
-                // Update in store
-                if let Some(stored) = self
-                    .blueprint_store
-                    .get_blueprint_mut(self.selected_blueprint_index)
-                {
-                    *stored = blueprint.clone();
-                }
-                self.save_blueprints();
-                return true;
+            && index < blueprint.resources.len()
+        {
+            blueprint.resources.swap(index, index - 1);
+            // Update in store
+            if let Some(stored) = self
+                .blueprint_store
+                .get_blueprint_mut(self.selected_blueprint_index)
+            {
+                *stored = blueprint.clone();
             }
+            self.save_blueprints();
+            return true;
+        }
         false
     }
 
     pub fn move_resource_down(&mut self, index: usize) -> bool {
         if let Some(ref mut blueprint) = self.current_blueprint
-            && index + 1 < blueprint.resources.len() {
-                blueprint.resources.swap(index, index + 1);
-                // Update in store
-                if let Some(stored) = self
-                    .blueprint_store
-                    .get_blueprint_mut(self.selected_blueprint_index)
-                {
-                    *stored = blueprint.clone();
-                }
-                self.save_blueprints();
-                return true;
+            && index + 1 < blueprint.resources.len()
+        {
+            blueprint.resources.swap(index, index + 1);
+            // Update in store
+            if let Some(stored) = self
+                .blueprint_store
+                .get_blueprint_mut(self.selected_blueprint_index)
+            {
+                *stored = blueprint.clone();
             }
+            self.save_blueprints();
+            return true;
+        }
         false
     }
 
@@ -402,7 +404,9 @@ impl App {
         } else if let Some(ref detail) = self.lb_detail {
             Some((detail.arn.clone(), detail.name.clone()))
         } else {
-            self.ecr_detail.as_ref().map(|detail| (detail.name.clone(), detail.name.clone()))
+            self.ecr_detail
+                .as_ref()
+                .map(|detail| (detail.name.clone(), detail.name.clone()))
         }
     }
 

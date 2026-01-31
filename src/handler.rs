@@ -114,11 +114,12 @@ pub fn process_loading(app: &mut App) {
                         .get(app.selected_index)
                         .map(|sg| sg.id.as_str())
                         .unwrap_or(""),
-                ) {
-                    app.preview_content = new_detail.to_markdown();
-                    app.preview_filename = format!("{}.md", new_detail.name);
-                    app.sg_detail = Some(new_detail);
-                }
+                )
+            {
+                app.preview_content = new_detail.to_markdown();
+                app.preview_filename = format!("{}.md", new_detail.name);
+                app.sg_detail = Some(new_detail);
+            }
             app.message = app.i18n.refresh_complete().to_string();
             finish_loading(app);
         }
@@ -866,25 +867,26 @@ fn handle_preview(app: &mut App, key: KeyEvent) {
                 && let (Some(resource_type), Some((resource_id, resource_name))) = (
                     app.get_current_resource_type(),
                     app.get_current_resource_info(),
-                ) {
-                    let region = app.get_current_region();
-                    let resource = BlueprintResource {
-                        resource_type,
-                        region,
-                        resource_id,
-                        resource_name,
-                    };
-                    app.add_resource_to_current_blueprint(resource);
+                )
+            {
+                let region = app.get_current_region();
+                let resource = BlueprintResource {
+                    resource_type,
+                    region,
+                    resource_id,
+                    resource_name,
+                };
+                app.add_resource_to_current_blueprint(resource);
 
-                    // 리소스 정리 후 블루프린트 상세로 돌아가기
-                    app.ec2_detail = None;
-                    app.network_detail = None;
-                    app.sg_detail = None;
-                    app.lb_detail = None;
-                    app.ecr_detail = None;
-                    app.preview_scroll = 0;
-                    app.screen = Screen::BlueprintDetail;
-                }
+                // 리소스 정리 후 블루프린트 상세로 돌아가기
+                app.ec2_detail = None;
+                app.network_detail = None;
+                app.sg_detail = None;
+                app.lb_detail = None;
+                app.ecr_detail = None;
+                app.preview_scroll = 0;
+                app.screen = Screen::BlueprintDetail;
+            }
         }
         KeyCode::Esc => {
             app.preview_scroll = 0;

@@ -40,18 +40,16 @@ fn draw_tabs(frame: &mut Frame, app: &App, area: Rect) {
     let i = &app.i18n;
 
     let tab_titles = vec![
-        Line::from(format!("  {}  ", i.main_tab()))
-            .style(if app.selected_tab == 0 {
-                Style::default().fg(Color::White).bg(Color::Blue)
-            } else {
-                Style::default().fg(Color::DarkGray)
-            }),
-        Line::from(format!("  {}  ", i.settings()))
-            .style(if app.selected_tab == 1 {
-                Style::default().fg(Color::White).bg(Color::Magenta)
-            } else {
-                Style::default().fg(Color::DarkGray)
-            }),
+        Line::from(format!("  {}  ", i.main_tab())).style(if app.selected_tab == 0 {
+            Style::default().fg(Color::White).bg(Color::Blue)
+        } else {
+            Style::default().fg(Color::DarkGray)
+        }),
+        Line::from(format!("  {}  ", i.settings())).style(if app.selected_tab == 1 {
+            Style::default().fg(Color::White).bg(Color::Magenta)
+        } else {
+            Style::default().fg(Color::DarkGray)
+        }),
     ];
 
     let tabs = Tabs::new(tab_titles)
@@ -85,46 +83,88 @@ fn draw_footer(frame: &mut Frame, app: &App, area: Rect) {
         Screen::Login => format!("Enter: {} | q: {}", i.retry(), i.exit()),
         Screen::BlueprintSelect => format!(
             "↑↓/jk: {} | Enter: {} | g: {} | d: {} | s: {} | ►: {} | q: {}",
-            i.move_cursor(), i.select(), i.markdown_generate(), i.delete(), i.single_mode(), i.settings(), i.exit()
+            i.move_cursor(),
+            i.select(),
+            i.markdown_generate(),
+            i.delete(),
+            i.single_mode(),
+            i.settings(),
+            i.exit()
         ),
         Screen::BlueprintDetail => format!(
             "↑↓/jk: {} | Shift+↑↓/JK: {} | a: {} | d: {} | g/Enter: {} | Esc: {} | q: {}",
-            i.move_cursor(), i.reorder(), i.add(), i.delete(), i.generate(), i.back(), i.exit()
+            i.move_cursor(),
+            i.reorder(),
+            i.add(),
+            i.delete(),
+            i.generate(),
+            i.back(),
+            i.exit()
         ),
         Screen::BlueprintNameInput => format!("Enter: {} | Esc: {}", i.confirm(), i.cancel()),
         Screen::BlueprintPreview => format!(
             "↑↓/jk: {} | PgUp/PgDn: {} | Home/End | Enter/s: {} | Esc: {} | q: {}",
-            i.scroll(), i.page(), i.save(), i.back(), i.exit()
+            i.scroll(),
+            i.page(),
+            i.save(),
+            i.back(),
+            i.exit()
         ),
         Screen::RegionSelect => format!(
             "↑↓/jk: {} | Enter: {} | Esc: {} | q: {}",
-            i.move_cursor(), i.select(), i.back(), i.exit()
+            i.move_cursor(),
+            i.select(),
+            i.back(),
+            i.exit()
         ),
         Screen::ServiceSelect => format!(
             "↑↓/jk: {} | Enter: {} | ►: {} | Esc: {} | q: {}",
-            i.move_cursor(), i.select(), i.settings(), i.back(), i.exit()
+            i.move_cursor(),
+            i.select(),
+            i.settings(),
+            i.back(),
+            i.exit()
         ),
-        Screen::Ec2Select | Screen::VpcSelect | Screen::SecurityGroupSelect |
-        Screen::LoadBalancerSelect | Screen::EcrSelect => format!(
+        Screen::Ec2Select
+        | Screen::VpcSelect
+        | Screen::SecurityGroupSelect
+        | Screen::LoadBalancerSelect
+        | Screen::EcrSelect => format!(
             "↑↓/jk: {} | Enter: {} | r: {} | Esc: {} | q: {}",
-            i.move_cursor(), i.select(), i.refresh(), i.back(), i.exit()
+            i.move_cursor(),
+            i.select(),
+            i.refresh(),
+            i.back(),
+            i.exit()
         ),
         Screen::Preview => {
             if app.blueprint_mode {
                 format!(
                     "↑↓/jk: {} | Enter/s: {} | a: {} | r: {} | Esc: {} | q: {}",
-                    i.scroll(), i.save(), i.add_to_blueprint(), i.refresh(), i.back(), i.exit()
+                    i.scroll(),
+                    i.save(),
+                    i.add_to_blueprint(),
+                    i.refresh(),
+                    i.back(),
+                    i.exit()
                 )
             } else {
                 format!(
                     "↑↓/jk: {} | Enter/s: {} | r: {} | Esc: {} | q: {}",
-                    i.scroll(), i.save(), i.refresh(), i.back(), i.exit()
+                    i.scroll(),
+                    i.save(),
+                    i.refresh(),
+                    i.back(),
+                    i.exit()
                 )
             }
         }
         Screen::Settings => format!(
             "↑↓/jk: {} | Enter/Space: {} | ◄: {} | q: {}",
-            i.move_cursor(), i.change(), i.back(), i.exit()
+            i.move_cursor(),
+            i.change(),
+            i.back(),
+            i.exit()
         ),
     };
 
@@ -223,8 +263,7 @@ fn draw_loading(frame: &mut Frame, app: &App, area: Rect) {
     ];
 
     let title = format!(" {} ", i.loading());
-    let para =
-        Paragraph::new(content).block(Block::default().title(title).borders(Borders::ALL));
+    let para = Paragraph::new(content).block(Block::default().title(title).borders(Borders::ALL));
     frame.render_widget(para, area);
 }
 
@@ -312,11 +351,7 @@ fn draw_vpc_loading_checklist(frame: &mut Frame, app: &App, area: Rect) {
     ];
 
     let title = format!(" Network {} ", i.loading());
-    let para = Paragraph::new(content).block(
-        Block::default()
-            .title(title)
-            .borders(Borders::ALL),
-    );
+    let para = Paragraph::new(content).block(Block::default().title(title).borders(Borders::ALL));
     frame.render_widget(para, area);
 }
 
@@ -398,7 +433,12 @@ fn draw_service_select(frame: &mut Frame, app: &App, area: Rect) {
     let lang = app.settings.language;
     let i = &app.i18n;
     let region = &REGIONS[app.selected_region];
-    let title = format!(" {} [{} - {}] ", i.service(), region.code, region.name(lang));
+    let title = format!(
+        " {} [{} - {}] ",
+        i.service(),
+        region.code,
+        region.name(lang)
+    );
 
     // Build service list: services + exit
     let services: Vec<&str> = SERVICE_KEYS.to_vec();
@@ -697,7 +737,8 @@ fn draw_blueprint_select(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         "  "
     };
-    items.push(ListItem::new(format!("{}{}", new_bp_prefix, i.new_blueprint())).style(new_bp_style));
+    items
+        .push(ListItem::new(format!("{}{}", new_bp_prefix, i.new_blueprint())).style(new_bp_style));
 
     // 기존 블루프린터 목록
     for (idx, bp) in app.blueprint_store.blueprints.iter().enumerate() {
@@ -715,8 +756,14 @@ fn draw_blueprint_select(frame: &mut Frame, app: &App, area: Rect) {
         };
         let resource_count = bp.resources.len();
         items.push(
-            ListItem::new(format!("{}{} ({} {})", prefix, bp.name, resource_count, i.resources()))
-                .style(style),
+            ListItem::new(format!(
+                "{}{} ({} {})",
+                prefix,
+                bp.name,
+                resource_count,
+                i.resources()
+            ))
+            .style(style),
         );
     }
 
@@ -819,7 +866,12 @@ fn draw_blueprint_name_input(frame: &mut Frame, app: &App, area: Rect) {
 
 fn draw_blueprint_preview(frame: &mut Frame, app: &App, area: Rect) {
     let i = &app.i18n;
-    let title = format!(" {} {} - {} ", i.blueprint(), i.preview(), app.preview_filename);
+    let title = format!(
+        " {} {} - {} ",
+        i.blueprint(),
+        i.preview(),
+        app.preview_filename
+    );
     let para = Paragraph::new(app.preview_content.as_str())
         .wrap(Wrap { trim: false })
         .scroll((app.preview_scroll, 0))
@@ -868,7 +920,9 @@ fn draw_blueprint_loading(frame: &mut Frame, app: &App, area: Rect, current_inde
         Line::from(Span::styled(
             format!(
                 "  {}... ({}/{})",
-                i.loading_blueprint_resources(), current_index, total
+                i.loading_blueprint_resources(),
+                current_index,
+                total
             ),
             Style::default()
                 .fg(Color::Yellow)
@@ -884,11 +938,7 @@ fn draw_blueprint_loading(frame: &mut Frame, app: &App, area: Rect, current_inde
     }
 
     let title = format!(" {} {} ", i.blueprint(), i.loading());
-    let para = Paragraph::new(content).block(
-        Block::default()
-            .title(title)
-            .borders(Borders::ALL),
-    );
+    let para = Paragraph::new(content).block(Block::default().title(title).borders(Borders::ALL));
     frame.render_widget(para, area);
 }
 
@@ -899,30 +949,36 @@ fn draw_settings(frame: &mut Frame, app: &App, area: Rect) {
     let lang_current = app.settings.language.display();
     let lang_next = app.settings.language.toggle().display();
 
-    let items: Vec<ListItem> = vec![
-        ListItem::new(Line::from(vec![
-            Span::styled(
-                if app.selected_setting == 0 { "▶ " } else { "  " },
-                if app.selected_setting == 0 {
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default()
-                },
-            ),
-            Span::styled(
-                format!("{}: ", i.language()),
-                Style::default().fg(Color::Cyan),
-            ),
-            Span::styled(
-                lang_current,
-                Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                format!(" → {}", lang_next),
-                Style::default().fg(Color::DarkGray),
-            ),
-        ])),
-    ];
+    let items: Vec<ListItem> = vec![ListItem::new(Line::from(vec![
+        Span::styled(
+            if app.selected_setting == 0 {
+                "▶ "
+            } else {
+                "  "
+            },
+            if app.selected_setting == 0 {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+            },
+        ),
+        Span::styled(
+            format!("{}: ", i.language()),
+            Style::default().fg(Color::Cyan),
+        ),
+        Span::styled(
+            lang_current,
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!(" → {}", lang_next),
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]))];
 
     let list = List::new(items).block(Block::default().title(title).borders(Borders::ALL));
     frame.render_widget(list, area);
