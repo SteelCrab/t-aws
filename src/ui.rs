@@ -3,10 +3,10 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs, Wrap},
 };
 
-use crate::app::{App, LoadingTask, REGIONS, SERVICES, Screen};
+use crate::app::{App, LoadingTask, REGIONS, SERVICE_KEYS, Screen};
 
 const EMD_LOGO: &str = r#"
   ______ __  __ _____  
@@ -24,14 +24,42 @@ pub fn draw(frame: &mut Frame, app: &App) {
         .margin(1)
         .constraints([
             Constraint::Length(8),
+            Constraint::Length(1), // Tab bar
             Constraint::Min(10),
             Constraint::Length(3),
         ])
         .split(frame.area());
 
     draw_header(frame, chunks[0]);
-    draw_main(frame, app, chunks[1]);
-    draw_footer(frame, app, chunks[2]);
+    draw_tabs(frame, app, chunks[1]);
+    draw_main(frame, app, chunks[2]);
+    draw_footer(frame, app, chunks[3]);
+}
+
+fn draw_tabs(frame: &mut Frame, app: &App, area: Rect) {
+    let i = &app.i18n;
+
+    let tab_titles = vec![
+        Line::from(format!("  {}  ", i.main_tab()))
+            .style(if app.selected_tab == 0 {
+                Style::default().fg(Color::White).bg(Color::Blue)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            }),
+        Line::from(format!("  {}  ", i.settings()))
+            .style(if app.selected_tab == 1 {
+                Style::default().fg(Color::White).bg(Color::Magenta)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            }),
+    ];
+
+    let tabs = Tabs::new(tab_titles)
+        .select(app.selected_tab)
+        .padding("", "")
+        .divider(" ");
+
+    frame.render_widget(tabs, area);
 }
 
 fn draw_header(frame: &mut Frame, area: Rect) {
@@ -52,39 +80,56 @@ fn draw_header(frame: &mut Frame, area: Rect) {
 }
 
 fn draw_footer(frame: &mut Frame, app: &App, area: Rect) {
+    let i = &app.i18n;
     let help = match &app.screen {
-        Screen::Login => "Enter: 재시도 | q: 종료",
-        Screen::BlueprintSelect => {
-            "↑↓/jk: 이동 | Enter: 선택 | g: 마크다운 생성 | d: 삭제 | s: 단일 모드 | q: 종료"
-        }
-        Screen::BlueprintDetail => {
-            "↑↓/jk: 이동 | Shift+↑↓/JK: 순서변경 | a: 추가 | d: 삭제 | g/Enter: 생성 | Esc: 뒤로 | q: 종료"
-        }
-        Screen::BlueprintNameInput => "Enter: 확인 | Esc: 취소",
-        Screen::BlueprintPreview => {
-            "↑↓/jk: 스크롤 | PgUp/PgDn: 페이지 | Home/End | Enter/s: 저장 | Esc: 뒤로 | q: 종료"
-        }
-        Screen::RegionSelect => "↑↓/jk: 이동 | Enter: 선택 | Esc: 뒤로 | q: 종료",
-        Screen::ServiceSelect => "↑↓/jk: 이동 | Enter: 선택 | Esc: 뒤로 | q: 종료",
-        Screen::Ec2Select => "↑↓/jk: 이동 | Enter: 선택 | r: 새로고침 | Esc: 뒤로 | q: 종료",
-        Screen::VpcSelect => "↑↓/jk: 이동 | Enter: 선택 | r: 새로고침 | Esc: 뒤로 | q: 종료",
-        Screen::SecurityGroupSelect => {
-            "↑↓/jk: 이동 | Enter: 선택 | r: 새로고침 | Esc: 뒤로 | q: 종료"
-        }
+        Screen::Login => format!("Enter: {} | q: {}", i.retry(), i.exit()),
+        Screen::BlueprintSelect => format!(
+            "↑↓/jk: {} | Enter: {} | g: {} | d: {} | s: {} | ►: {} | q: {}",
+            i.move_cursor(), i.select(), i.markdown_generate(), i.delete(), i.single_mode(), i.settings(), i.exit()
+        ),
+        Screen::BlueprintDetail => format!(
+            "↑↓/jk: {} | Shift+↑↓/JK: {} | a: {} | d: {} | g/Enter: {} | Esc: {} | q: {}",
+            i.move_cursor(), i.reorder(), i.add(), i.delete(), i.generate(), i.back(), i.exit()
+        ),
+        Screen::BlueprintNameInput => format!("Enter: {} | Esc: {}", i.confirm(), i.cancel()),
+        Screen::BlueprintPreview => format!(
+            "↑↓/jk: {} | PgUp/PgDn: {} | Home/End | Enter/s: {} | Esc: {} | q: {}",
+            i.scroll(), i.page(), i.save(), i.back(), i.exit()
+        ),
+        Screen::RegionSelect => format!(
+            "↑↓/jk: {} | Enter: {} | Esc: {} | q: {}",
+            i.move_cursor(), i.select(), i.back(), i.exit()
+        ),
+        Screen::ServiceSelect => format!(
+            "↑↓/jk: {} | Enter: {} | ►: {} | Esc: {} | q: {}",
+            i.move_cursor(), i.select(), i.settings(), i.back(), i.exit()
+        ),
+        Screen::Ec2Select | Screen::VpcSelect | Screen::SecurityGroupSelect |
+        Screen::LoadBalancerSelect | Screen::EcrSelect => format!(
+            "↑↓/jk: {} | Enter: {} | r: {} | Esc: {} | q: {}",
+            i.move_cursor(), i.select(), i.refresh(), i.back(), i.exit()
+        ),
         Screen::Preview => {
             if app.blueprint_mode {
-                "↑↓/jk: 스크롤 | Enter/s: 저장 | a: 블루프린터에 추가 | r: 새로고침 | Esc: 뒤로 | q: 종료"
+                format!(
+                    "↑↓/jk: {} | Enter/s: {} | a: {} | r: {} | Esc: {} | q: {}",
+                    i.scroll(), i.save(), i.add_to_blueprint(), i.refresh(), i.back(), i.exit()
+                )
             } else {
-                "↑↓/jk: 스크롤 | Enter/s: 저장 | r: 새로고침 | Esc: 뒤로 | q: 종료"
+                format!(
+                    "↑↓/jk: {} | Enter/s: {} | r: {} | Esc: {} | q: {}",
+                    i.scroll(), i.save(), i.refresh(), i.back(), i.exit()
+                )
             }
         }
-        Screen::LoadBalancerSelect => {
-            "↑↓/jk: 이동 | Enter: 선택 | r: 새로고침 | Esc: 뒤로 | q: 종료"
-        }
+        Screen::Settings => format!(
+            "↑↓/jk: {} | Enter/Space: {} | ◄: {} | q: {}",
+            i.move_cursor(), i.change(), i.back(), i.exit()
+        ),
     };
 
     let msg = if app.message.is_empty() {
-        help.to_string()
+        help
     } else {
         format!("{} | {}", app.message, help)
     };
@@ -115,10 +160,14 @@ fn draw_main(frame: &mut Frame, app: &App, area: Rect) {
         Screen::SecurityGroupSelect => draw_security_group_select(frame, app, area),
         Screen::Preview => draw_preview(frame, app, area),
         Screen::LoadBalancerSelect => draw_load_balancer_select(frame, app, area),
+        Screen::EcrSelect => draw_ecr_select(frame, app, area),
+        Screen::Settings => draw_settings(frame, app, area),
     }
 }
 
 fn draw_loading(frame: &mut Frame, app: &App, area: Rect) {
+    let i = &app.i18n;
+
     // VPC 상세 로딩일 경우 체크리스트 표시
     if let LoadingTask::LoadVpcDetail(_, _) = &app.loading_task {
         draw_vpc_loading_checklist(frame, app, area);
@@ -132,28 +181,31 @@ fn draw_loading(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     let task_name = match &app.loading_task {
-        LoadingTask::None => "처리 중",
-        LoadingTask::RefreshEc2 => "EC2 목록 새로고침 중",
-        LoadingTask::RefreshVpc => "Network 목록 새로고침 중",
-        LoadingTask::RefreshSecurityGroup => "Security Group 목록 새로고침 중",
-        LoadingTask::RefreshPreview => "미리보기 새로고침 중",
-        LoadingTask::LoadEc2 => "EC2 인스턴스 목록 조회 중",
-        LoadingTask::LoadVpc => "Network(VPC) 목록 조회 중",
-        LoadingTask::LoadSecurityGroup => "Security Group 목록 조회 중",
-        LoadingTask::LoadEc2Detail(_) => "EC2 상세 정보 조회 중",
-        LoadingTask::LoadVpcDetail(_, _) => "Network 상세 정보 조회 중",
-        LoadingTask::LoadSecurityGroupDetail(_) => "Security Group 상세 정보 조회 중",
-        LoadingTask::RefreshLoadBalancer => "Load Balancer 목록 새로고침 중",
-        LoadingTask::LoadLoadBalancer => "Load Balancer 목록 조회 중",
-        LoadingTask::LoadLoadBalancerDetail(_) => "Load Balancer 상세 정보 조회 중",
-        LoadingTask::LoadBlueprintResources(_) => "블루프린트 리소스 조회 중",
+        LoadingTask::None => i.processing(),
+        LoadingTask::RefreshEc2 => i.refreshing_ec2_list(),
+        LoadingTask::RefreshVpc => i.refreshing_vpc_list(),
+        LoadingTask::RefreshSecurityGroup => i.refreshing_sg_list(),
+        LoadingTask::RefreshPreview => i.refreshing_preview(),
+        LoadingTask::LoadEc2 => i.loading_ec2_list(),
+        LoadingTask::LoadVpc => i.loading_vpc_list(),
+        LoadingTask::LoadSecurityGroup => i.loading_sg_list(),
+        LoadingTask::LoadEc2Detail(_) => i.loading_ec2_detail(),
+        LoadingTask::LoadVpcDetail(_, _) => i.loading_vpc_detail(),
+        LoadingTask::LoadSecurityGroupDetail(_) => i.loading_sg_detail(),
+        LoadingTask::RefreshLoadBalancer => i.refreshing_lb_list(),
+        LoadingTask::LoadLoadBalancer => i.loading_lb_list(),
+        LoadingTask::LoadLoadBalancerDetail(_) => i.loading_lb_detail(),
+        LoadingTask::RefreshEcr => i.refreshing_ecr_list(),
+        LoadingTask::LoadEcr => i.loading_ecr_list(),
+        LoadingTask::LoadEcrDetail(_) => i.loading_ecr_detail(),
+        LoadingTask::LoadBlueprintResources(_) => i.loading_blueprint_resources(),
     };
 
     let content = vec![
         Line::from(""),
         Line::from(""),
         Line::from(Span::styled(
-            "    ⏳ 로딩 중...",
+            format!("    ⏳ {}", i.loading_msg()),
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
@@ -165,18 +217,20 @@ fn draw_loading(frame: &mut Frame, app: &App, area: Rect) {
         )),
         Line::from(""),
         Line::from(Span::styled(
-            "    AWS CLI 응답 대기 중입니다.",
+            format!("    {}", i.aws_cli_waiting()),
             Style::default().fg(Color::DarkGray),
         )),
     ];
 
+    let title = format!(" {} ", i.loading());
     let para =
-        Paragraph::new(content).block(Block::default().title(" 로딩 ").borders(Borders::ALL));
+        Paragraph::new(content).block(Block::default().title(title).borders(Borders::ALL));
     frame.render_widget(para, area);
 }
 
 fn draw_vpc_loading_checklist(frame: &mut Frame, app: &App, area: Rect) {
     let p = &app.loading_progress;
+    let i = &app.i18n;
 
     // 현재 로딩 중인 단계 결정
     let current_step = if !p.vpc_info {
@@ -197,7 +251,7 @@ fn draw_vpc_loading_checklist(frame: &mut Frame, app: &App, area: Rect) {
         7
     };
 
-    fn item(done: bool, loading: bool, text: &'static str) -> Line<'static> {
+    fn item(done: bool, loading: bool, text: &str) -> Line<'static> {
         let (check, color) = if done {
             ("  ✓ ", Color::Green)
         } else if loading {
@@ -214,57 +268,64 @@ fn draw_vpc_loading_checklist(frame: &mut Frame, app: &App, area: Rect) {
         };
         Line::from(vec![
             Span::styled(check, Style::default().fg(color)),
-            Span::styled(text, Style::default().fg(text_color)),
+            Span::styled(text.to_string(), Style::default().fg(text_color)),
         ])
     }
 
-    let current_task = match current_step {
-        0 => "VPC 기본 정보",
-        1 => "서브넷",
-        2 => "인터넷 게이트웨이",
-        3 => "NAT 게이트웨이",
-        4 => "라우팅 테이블",
-        5 => "Elastic IP",
-        6 => "DNS 설정",
-        _ => "완료 중",
+    let steps = [
+        i.vpc_basic_info(),
+        i.subnets(),
+        i.internet_gateway(),
+        i.nat_gateway(),
+        i.route_tables(),
+        i.elastic_ip(),
+        i.dns_settings(),
+    ];
+
+    let current_task = if current_step < steps.len() {
+        steps[current_step]
+    } else {
+        i.completing()
     };
 
     let content = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  ⏳ Network 상세 정보 조회 중...",
+            format!("  ⏳ {}...", i.loading_vpc_detail()),
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        item(p.vpc_info, current_step == 0, "VPC 기본 정보"),
-        item(p.subnets, current_step == 1, "서브넷"),
-        item(p.igws, current_step == 2, "인터넷 게이트웨이"),
-        item(p.nats, current_step == 3, "NAT 게이트웨이"),
-        item(p.route_tables, current_step == 4, "라우팅 테이블"),
-        item(p.eips, current_step == 5, "Elastic IP"),
-        item(p.dns_attrs, current_step == 6, "DNS 설정"),
+        item(p.vpc_info, current_step == 0, steps[0]),
+        item(p.subnets, current_step == 1, steps[1]),
+        item(p.igws, current_step == 2, steps[2]),
+        item(p.nats, current_step == 3, steps[3]),
+        item(p.route_tables, current_step == 4, steps[4]),
+        item(p.eips, current_step == 5, steps[5]),
+        item(p.dns_attrs, current_step == 6, steps[6]),
         Line::from(""),
         Line::from(Span::styled(
-            format!("  현재: {} 조회 중...", current_task),
+            i.current_loading(current_task),
             Style::default().fg(Color::Cyan),
         )),
     ];
 
+    let title = format!(" Network {} ", i.loading());
     let para = Paragraph::new(content).block(
         Block::default()
-            .title(" Network 로딩 ")
+            .title(title)
             .borders(Borders::ALL),
     );
     frame.render_widget(para, area);
 }
 
 fn draw_login(frame: &mut Frame, app: &App, area: Rect) {
+    let i = &app.i18n;
     let content = if let Some(ref info) = app.login_info {
         vec![
             Line::from(Span::styled(
-                "✓ AWS 로그인 확인됨",
+                i.aws_login_verified(),
                 Style::default().fg(Color::Green),
             )),
             Line::from(""),
@@ -273,16 +334,16 @@ fn draw_login(frame: &mut Frame, app: &App, area: Rect) {
     } else if let Some(ref err) = app.login_error {
         vec![
             Line::from(Span::styled(
-                "✗ AWS 로그인 필요",
+                i.aws_login_required(),
                 Style::default().fg(Color::Red),
             )),
             Line::from(""),
             Line::from(err.as_str()),
             Line::from(""),
-            Line::from("aws configure 또는 aws sso login을 실행하세요."),
+            Line::from(i.aws_configure_hint()),
         ]
     } else {
-        vec![Line::from("AWS CLI 로그인 확인 중...")]
+        vec![Line::from(i.aws_login_checking())]
     };
 
     let mut login_content = vec![Line::from("")];
@@ -299,13 +360,15 @@ fn draw_login(frame: &mut Frame, app: &App, area: Rect) {
     login_content.push(Line::from(""));
     login_content.extend(content);
 
+    let title = format!(" {} ", i.login());
     let para = Paragraph::new(login_content)
-        .block(Block::default().title(" 로그인 ").borders(Borders::ALL))
+        .block(Block::default().title(title).borders(Borders::ALL))
         .alignment(Alignment::Center);
     frame.render_widget(para, area);
 }
 
 fn draw_region_select(frame: &mut Frame, app: &App, area: Rect) {
+    let lang = app.settings.language;
     let items: Vec<ListItem> = REGIONS
         .iter()
         .enumerate()
@@ -322,30 +385,38 @@ fn draw_region_select(frame: &mut Frame, app: &App, area: Rect) {
             } else {
                 "  "
             };
-            ListItem::new(format!("{}{} ({})", prefix, r.code, r.name)).style(style)
+            ListItem::new(format!("{}{} ({})", prefix, r.code, r.name(lang))).style(style)
         })
         .collect();
 
-    let list = List::new(items).block(Block::default().title(" 리전 ").borders(Borders::ALL));
+    let title = format!(" {} ", app.i18n.region());
+    let list = List::new(items).block(Block::default().title(title).borders(Borders::ALL));
     frame.render_widget(list, area);
 }
 
 fn draw_service_select(frame: &mut Frame, app: &App, area: Rect) {
+    let lang = app.settings.language;
+    let i = &app.i18n;
     let region = &REGIONS[app.selected_region];
-    let title = format!(" 서비스 [{} - {}] ", region.code, region.name);
+    let title = format!(" {} [{} - {}] ", i.service(), region.code, region.name(lang));
 
-    let items: Vec<ListItem> = SERVICES
+    // Build service list: services + exit
+    let services: Vec<&str> = SERVICE_KEYS.to_vec();
+    let exit_label = i.exit();
+
+    let items: Vec<ListItem> = services
         .iter()
+        .chain(std::iter::once(&exit_label))
         .enumerate()
-        .map(|(i, s)| {
-            let style = if i == app.selected_service {
+        .map(|(idx, s)| {
+            let style = if idx == app.selected_service {
                 Style::default()
                     .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
             };
-            let prefix = if i == app.selected_service {
+            let prefix = if idx == app.selected_service {
                 "▶ "
             } else {
                 "  "
@@ -359,11 +430,12 @@ fn draw_service_select(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_ec2_select(frame: &mut Frame, app: &App, area: Rect) {
+    let lang = app.settings.language;
     let region = &REGIONS[app.selected_region];
-    let title = format!(" EC2 인스턴스 [{} - {}] ", region.code, region.name);
+    let title = format!(" EC2 [{} - {}] ", region.code, region.name(lang));
 
     if app.instances.is_empty() {
-        let para = Paragraph::new("인스턴스가 없습니다.")
+        let para = Paragraph::new(app.i18n.no_instances())
             .block(Block::default().title(title).borders(Borders::ALL));
         frame.render_widget(para, area);
         return;
@@ -406,7 +478,7 @@ fn draw_ec2_select(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_preview(frame: &mut Frame, app: &App, area: Rect) {
-    let title = format!(" 미리보기 - {} ", app.preview_filename);
+    let title = format!(" {} - {} ", app.i18n.preview(), app.preview_filename);
     let para = Paragraph::new(app.preview_content.as_str())
         .wrap(Wrap { trim: false })
         .scroll((app.preview_scroll, 0))
@@ -415,11 +487,12 @@ fn draw_preview(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_vpc_select(frame: &mut Frame, app: &App, area: Rect) {
+    let lang = app.settings.language;
     let region = &REGIONS[app.selected_region];
-    let title = format!(" Network [{} - {}] ", region.code, region.name);
+    let title = format!(" Network [{} - {}] ", region.code, region.name(lang));
 
     if app.vpcs.is_empty() {
-        let para = Paragraph::new("Network가 없습니다.")
+        let para = Paragraph::new(app.i18n.no_vpcs())
             .block(Block::default().title(title).borders(Borders::ALL));
         frame.render_widget(para, area);
         return;
@@ -462,11 +535,12 @@ fn draw_vpc_select(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_security_group_select(frame: &mut Frame, app: &App, area: Rect) {
+    let lang = app.settings.language;
     let region = &REGIONS[app.selected_region];
-    let title = format!(" Security Group [{} - {}] ", region.code, region.name);
+    let title = format!(" Security Group [{} - {}] ", region.code, region.name(lang));
 
     if app.security_groups.is_empty() {
-        let para = Paragraph::new("Security Group이 없습니다.")
+        let para = Paragraph::new(app.i18n.no_security_groups())
             .block(Block::default().title(title).borders(Borders::ALL));
         frame.render_widget(para, area);
         return;
@@ -509,11 +583,12 @@ fn draw_security_group_select(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_load_balancer_select(frame: &mut Frame, app: &App, area: Rect) {
+    let lang = app.settings.language;
     let region = &REGIONS[app.selected_region];
-    let title = format!(" Load Balancer [{} - {}] ", region.code, region.name);
+    let title = format!(" Load Balancer [{} - {}] ", region.code, region.name(lang));
 
     if app.load_balancers.is_empty() {
-        let para = Paragraph::new("Load Balancer가 없습니다.")
+        let para = Paragraph::new(app.i18n.no_load_balancers())
             .block(Block::default().title(title).borders(Borders::ALL));
         frame.render_widget(para, area);
         return;
@@ -555,8 +630,57 @@ fn draw_load_balancer_select(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(list, area);
 }
 
+fn draw_ecr_select(frame: &mut Frame, app: &App, area: Rect) {
+    let lang = app.settings.language;
+    let region = &REGIONS[app.selected_region];
+    let title = format!(" ECR [{} - {}] ", region.code, region.name(lang));
+
+    if app.ecr_repositories.is_empty() {
+        let para = Paragraph::new(app.i18n.no_ecr_repos())
+            .block(Block::default().title(title).borders(Borders::ALL));
+        frame.render_widget(para, area);
+        return;
+    }
+
+    let items: Vec<ListItem> = app
+        .ecr_repositories
+        .iter()
+        .enumerate()
+        .map(|(i, repo)| {
+            let is_in_blueprint = app.current_blueprint.as_ref().is_some_and(|bp| {
+                bp.resources
+                    .iter()
+                    .any(|r| r.resource_id == repo.id && r.resource_type == ResourceType::Ecr)
+            });
+
+            let style = if i == app.selected_index {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+            };
+            let mut prefix = if i == app.selected_index {
+                "▶ ".to_string()
+            } else {
+                "  ".to_string()
+            };
+
+            if is_in_blueprint {
+                prefix = format!("{}✓ ", prefix);
+            }
+
+            ListItem::new(format!("{}{}", prefix, repo.name)).style(style)
+        })
+        .collect();
+
+    let list = List::new(items).block(Block::default().title(title).borders(Borders::ALL));
+    frame.render_widget(list, area);
+}
+
 fn draw_blueprint_select(frame: &mut Frame, app: &App, area: Rect) {
-    let title = " 블루프린터 ";
+    let i = &app.i18n;
+    let title = format!(" {} ", i.blueprint());
 
     let mut items: Vec<ListItem> = Vec::new();
 
@@ -573,25 +697,25 @@ fn draw_blueprint_select(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         "  "
     };
-    items.push(ListItem::new(format!("{}+ 새 블루프린터", new_bp_prefix)).style(new_bp_style));
+    items.push(ListItem::new(format!("{}{}", new_bp_prefix, i.new_blueprint())).style(new_bp_style));
 
     // 기존 블루프린터 목록
-    for (i, bp) in app.blueprint_store.blueprints.iter().enumerate() {
-        let style = if i + 1 == app.selected_blueprint_index {
+    for (idx, bp) in app.blueprint_store.blueprints.iter().enumerate() {
+        let style = if idx + 1 == app.selected_blueprint_index {
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD)
         } else {
             Style::default()
         };
-        let prefix = if i + 1 == app.selected_blueprint_index {
+        let prefix = if idx + 1 == app.selected_blueprint_index {
             "▶ "
         } else {
             "  "
         };
         let resource_count = bp.resources.len();
         items.push(
-            ListItem::new(format!("{}{} ({} 리소스)", prefix, bp.name, resource_count))
+            ListItem::new(format!("{}{} ({} {})", prefix, bp.name, resource_count, i.resources()))
                 .style(style),
         );
     }
@@ -601,28 +725,30 @@ fn draw_blueprint_select(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_blueprint_detail(frame: &mut Frame, app: &App, area: Rect) {
+    let i = &app.i18n;
     let bp = match &app.current_blueprint {
         Some(bp) => bp,
         None => {
-            let para = Paragraph::new("블루프린터 로드 실패")
-                .block(Block::default().title(" 블루프린터 ").borders(Borders::ALL));
+            let title = format!(" {} ", i.blueprint());
+            let para = Paragraph::new(i.blueprint_load_failed())
+                .block(Block::default().title(title).borders(Borders::ALL));
             frame.render_widget(para, area);
             return;
         }
     };
 
-    let title = format!(" 블루프린터: {} ", bp.name);
+    let title = format!(" {}: {} ", i.blueprint(), bp.name);
 
     if bp.resources.is_empty() {
         let content = vec![
             Line::from(""),
             Line::from(Span::styled(
-                "  리소스가 없습니다.",
+                format!("  {}.", i.no_resources()),
                 Style::default().fg(Color::DarkGray),
             )),
             Line::from(""),
             Line::from(Span::styled(
-                "  'a' 키를 눌러 리소스를 추가하세요.",
+                format!("  {}", i.press_a_to_add()),
                 Style::default().fg(Color::Cyan),
             )),
         ];
@@ -655,6 +781,7 @@ fn draw_blueprint_detail(frame: &mut Frame, app: &App, area: Rect) {
                 ResourceType::Network => Color::Green,
                 ResourceType::SecurityGroup => Color::Magenta,
                 ResourceType::LoadBalancer => Color::Blue,
+                ResourceType::Ecr => Color::LightRed,
             };
 
             ListItem::new(Line::from(vec![
@@ -673,12 +800,13 @@ fn draw_blueprint_detail(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_blueprint_name_input(frame: &mut Frame, app: &App, area: Rect) {
-    let title = " 새 블루프린터 ";
+    let i = &app.i18n;
+    let title = format!(" {} ", i.new_blueprint());
 
     let content = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  블루프린터 이름을 입력하세요:",
+            format!("  {}", i.enter_blueprint_name()),
             Style::default().fg(Color::Cyan),
         )),
         Line::from(""),
@@ -690,7 +818,8 @@ fn draw_blueprint_name_input(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_blueprint_preview(frame: &mut Frame, app: &App, area: Rect) {
-    let title = format!(" 블루프린터 미리보기 - {} ", app.preview_filename);
+    let i = &app.i18n;
+    let title = format!(" {} {} - {} ", i.blueprint(), i.preview(), app.preview_filename);
     let para = Paragraph::new(app.preview_content.as_str())
         .wrap(Wrap { trim: false })
         .scroll((app.preview_scroll, 0))
@@ -699,11 +828,13 @@ fn draw_blueprint_preview(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_blueprint_loading(frame: &mut Frame, app: &App, area: Rect, current_index: usize) {
+    let i = &app.i18n;
     let bp = match &app.current_blueprint {
         Some(bp) => bp,
         None => {
-            let para = Paragraph::new("로딩 중...")
-                .block(Block::default().title(" 로딩 ").borders(Borders::ALL));
+            let title = format!(" {} ", i.loading());
+            let para = Paragraph::new(i.loading_msg())
+                .block(Block::default().title(title).borders(Borders::ALL));
             frame.render_widget(para, area);
             return;
         }
@@ -736,8 +867,8 @@ fn draw_blueprint_loading(frame: &mut Frame, app: &App, area: Rect, current_inde
         Line::from(""),
         Line::from(Span::styled(
             format!(
-                "  블루프린터 리소스 조회 중... ({}/{})",
-                current_index, total
+                "  {}... ({}/{})",
+                i.loading_blueprint_resources(), current_index, total
             ),
             Style::default()
                 .fg(Color::Yellow)
@@ -746,16 +877,53 @@ fn draw_blueprint_loading(frame: &mut Frame, app: &App, area: Rect, current_inde
         Line::from(""),
     ];
 
-    for (i, res) in bp.resources.iter().enumerate() {
-        let done = i < current_index;
-        let loading = i == current_index;
+    for (idx, res) in bp.resources.iter().enumerate() {
+        let done = idx < current_index;
+        let loading = idx == current_index;
         content.push(item(done, loading, res.display()));
     }
 
+    let title = format!(" {} {} ", i.blueprint(), i.loading());
     let para = Paragraph::new(content).block(
         Block::default()
-            .title(" 블루프린터 로딩 ")
+            .title(title)
             .borders(Borders::ALL),
     );
     frame.render_widget(para, area);
+}
+
+fn draw_settings(frame: &mut Frame, app: &App, area: Rect) {
+    let i = &app.i18n;
+    let title = format!(" {} ", i.settings());
+
+    let lang_current = app.settings.language.display();
+    let lang_next = app.settings.language.toggle().display();
+
+    let items: Vec<ListItem> = vec![
+        ListItem::new(Line::from(vec![
+            Span::styled(
+                if app.selected_setting == 0 { "▶ " } else { "  " },
+                if app.selected_setting == 0 {
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default()
+                },
+            ),
+            Span::styled(
+                format!("{}: ", i.language()),
+                Style::default().fg(Color::Cyan),
+            ),
+            Span::styled(
+                lang_current,
+                Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!(" → {}", lang_next),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ])),
+    ];
+
+    let list = List::new(items).block(Block::default().title(title).borders(Borders::ALL));
+    frame.render_widget(list, area);
 }
