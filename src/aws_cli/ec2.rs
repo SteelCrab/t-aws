@@ -424,18 +424,15 @@ fn get_instance_user_data(instance_id: &str) -> Option<String> {
         "json",
     ])?;
 
-    if let Ok(response) = serde_json::from_str::<UserDataResponse>(&output) {
-        if let Some(user_data) = response.user_data {
-            if let Some(base64_data) = user_data.value {
-                if !base64_data.is_empty() {
-                    if let Ok(decoded_bytes) = general_purpose::STANDARD.decode(base64_data) {
-                        let decoded = String::from_utf8_lossy(&decoded_bytes).to_string();
-                        if !decoded.trim().is_empty() {
-                            return Some(decoded);
-                        }
-                    }
-                }
-            }
+    if let Ok(response) = serde_json::from_str::<UserDataResponse>(&output)
+        && let Some(user_data) = response.user_data
+        && let Some(base64_data) = user_data.value
+        && !base64_data.is_empty()
+        && let Ok(decoded_bytes) = general_purpose::STANDARD.decode(base64_data)
+    {
+        let decoded = String::from_utf8_lossy(&decoded_bytes).to_string();
+        if !decoded.trim().is_empty() {
+            return Some(decoded);
         }
     }
     None
