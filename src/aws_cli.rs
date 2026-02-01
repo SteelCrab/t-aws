@@ -1,3 +1,4 @@
+use base64::{Engine as _, engine::general_purpose};
 use serde::Deserialize;
 use std::process::Command;
 use std::sync::Mutex;
@@ -866,6 +867,18 @@ fn get_volume_detail(
     })
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct UserDataResponse {
+    user_data: Option<UserDataValue>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct UserDataValue {
+    value: Option<String>,
+}
+
 fn get_instance_user_data(instance_id: &str) -> Option<String> {
     let output = run_aws_cli(&[
         "ec2",
@@ -878,24 +891,15 @@ fn get_instance_user_data(instance_id: &str) -> Option<String> {
         "json",
     ])?;
 
-    // Extract base64 encoded user data
-    if let Some(value_pos) = output.find("\"Value\": \"") {
-        let start = value_pos + 10;
-        if let Some(end) = output[start..].find('"') {
-            let base64_data = &output[start..start + end];
-            if !base64_data.is_empty() {
-                // Decode base64
-                use std::process::Command;
-                let decode_output = Command::new("bash")
-                    .arg("-c")
-                    .arg(format!("echo '{}' | base64 -d 2>/dev/null", base64_data))
-                    .output()
-                    .ok()?;
-
-                if decode_output.status.success() {
-                    let decoded = String::from_utf8_lossy(&decode_output.stdout).to_string();
-                    if !decoded.trim().is_empty() {
-                        return Some(decoded);
+    if let Ok(response) = serde_json::from_str::<UserDataResponse>(&output) {
+        if let Some(user_data) = response.user_data {
+            if let Some(base64_data) = user_data.value {
+                if !base64_data.is_empty() {
+                    if let Ok(decoded_bytes) = general_purpose::STANDARD.decode(base64_data) {
+                        let decoded = String::from_utf8_lossy(&decoded_bytes).to_string();
+                        if !decoded.trim().is_empty() {
+                            return Some(decoded);
+                        }
                     }
                 }
             }
