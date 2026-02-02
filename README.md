@@ -13,13 +13,20 @@
 - **Markdown Generation**: Automatically generate detailed Markdown documentation for selected resources, complete with network diagrams (Mermaid.js).
 - **TUI Interface**: A user-friendly terminal interface built with `ratatui`.
 
-## Usage
-
-Run the application:
+## Installation
 
 ```bash
 cargo build --release
-./target/release/emd
+cp ./target/release/emd /usr/local/bin/
+```
+
+## Usage
+
+```bash
+emd              # Run TUI mode
+emd update       # Update to latest version
+emd version      # Show version
+emd help         # Show help
 ```
 
 

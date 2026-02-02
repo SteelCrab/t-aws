@@ -1,11 +1,13 @@
 mod app;
 mod aws_cli;
 mod blueprint;
+mod cli;
 mod handler;
 mod i18n;
 mod output;
 mod settings;
 mod ui;
+mod update;
 
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyEventKind},
@@ -19,6 +21,10 @@ use std::time::Duration;
 use app::App;
 
 fn main() -> io::Result<()> {
+    if cli::run().is_some() {
+        return Ok(());
+    }
+
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;

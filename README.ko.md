@@ -11,13 +11,20 @@
 - **마크다운 생성**: 선택한 리소스에 대한 상세한 마크다운 문서를 자동으로 생성하며, 네트워크 구성도(Mermaid.js)도 포함됩니다.
 - **TUI 인터페이스**: `ratatui`로 구축된 사용자 친화적인 터미널 인터페이스를 제공합니다.
 
-## 사용법
-
-애플리케이션 실행:
+## 설치
 
 ```bash
 cargo build --release
-./target/release/emd
+cp ./target/release/emd /usr/local/bin/
+```
+
+## 사용법
+
+```bash
+emd              # TUI 모드 실행
+emd update       # 최신 버전으로 업데이트
+emd version      # 버전 정보 출력
+emd help         # 도움말 출력
 ```
 
 
