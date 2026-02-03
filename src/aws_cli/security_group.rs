@@ -1,4 +1,5 @@
 use crate::aws_cli::common::{AwsResource, Tag, run_aws_cli};
+use crate::i18n::{I18n, Language};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -81,7 +82,8 @@ pub struct SecurityRule {
 }
 
 impl SecurityGroupDetail {
-    pub fn to_markdown(&self) -> String {
+    pub fn to_markdown(&self, lang: Language) -> String {
+        let i18n = I18n::new(lang);
         let display_name = if self.name.is_empty() || self.name == self.id {
             format!("NULL - {}", self.id)
         } else {
@@ -89,16 +91,22 @@ impl SecurityGroupDetail {
         };
         let mut lines = vec![
             format!("## Security Group ({})\n", display_name),
-            "| 항목 | 값 |".to_string(),
+            format!("| {} | {} |", i18n.item(), i18n.value()),
             "|:---|:---|".to_string(),
-            format!("| 이름 | {} |", display_name),
-            format!("| 설명 | {} |", self.description),
+            format!("| {} | {} |", i18n.md_name(), display_name),
+            format!("| {} | {} |", i18n.md_description(), self.description),
             format!("| VPC ID | {} |", self.vpc_id),
         ];
 
         if !self.inbound_rules.is_empty() {
-            lines.push("\n### 인바운드 규칙".to_string());
-            lines.push("| 프로토콜 | 포트 범위 | 소스 | 설명 |".to_string());
+            lines.push(format!("\n### {}", i18n.md_inbound_rules()));
+            lines.push(format!(
+                "| {} | {} | {} | {} |",
+                i18n.md_protocol(),
+                i18n.md_port_range(),
+                i18n.md_source(),
+                i18n.md_description()
+            ));
             lines.push("|:---|:---|:---|:---|".to_string());
             for rule in &self.inbound_rules {
                 lines.push(format!(
@@ -109,8 +117,14 @@ impl SecurityGroupDetail {
         }
 
         if !self.outbound_rules.is_empty() {
-            lines.push("\n### 아웃바운드 규칙".to_string());
-            lines.push("| 프로토콜 | 포트 범위 | 대상 | 설명 |".to_string());
+            lines.push(format!("\n### {}", i18n.md_outbound_rules()));
+            lines.push(format!(
+                "| {} | {} | {} | {} |",
+                i18n.md_protocol(),
+                i18n.md_port_range(),
+                i18n.md_destination(),
+                i18n.md_description()
+            ));
             lines.push("|:---|:---|:---|:---|".to_string());
             for rule in &self.outbound_rules {
                 lines.push(format!(

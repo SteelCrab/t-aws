@@ -1,4 +1,5 @@
 use crate::aws_cli::common::{AwsResource, run_aws_cli};
+use crate::i18n::{I18n, Language};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -159,7 +160,8 @@ pub struct TargetInfo {
 }
 
 impl LoadBalancerDetail {
-    pub fn to_markdown(&self) -> String {
+    pub fn to_markdown(&self, lang: Language) -> String {
+        let i18n = I18n::new(lang);
         // Extract LB ID from ARN (last part after the last /)
         let lb_id = self.arn.rsplit('/').next().unwrap_or(&self.arn);
         let display_name = if self.name.is_empty() {
@@ -169,14 +171,18 @@ impl LoadBalancerDetail {
         };
         let mut lines = vec![
             format!("## Load Balancer ({})\n", display_name),
-            "| 항목 | 값 |".to_string(),
+            format!("| {} | {} |", i18n.item(), i18n.value()),
             "|:---|:---|".to_string(),
-            format!("| 이름 | {} |", display_name),
-            format!("| 상태 | {} |", self.state),
-            format!("| DNS 이름 | {} |", self.dns_name),
-            format!("| 타입 | {} |", self.lb_type),
+            format!("| {} | {} |", i18n.md_name(), display_name),
+            format!("| {} | {} |", i18n.md_state(), self.state),
+            format!("| {} | {} |", i18n.md_dns_name(), self.dns_name),
+            format!("| {} | {} |", i18n.md_type(), self.lb_type),
             format!("| Scheme | {} |", self.scheme),
-            format!("| IP 주소 유형 | {} |", self.ip_address_type),
+            format!(
+                "| {} | {} |",
+                i18n.md_ip_address_type(),
+                self.ip_address_type
+            ),
             format!("| VPC ID | {} |", self.vpc_id),
         ];
 
@@ -196,7 +202,12 @@ impl LoadBalancerDetail {
 
         if !self.listeners.is_empty() {
             lines.push("\n### Listeners".to_string());
-            lines.push("| 포트 | 프로토콜 | 기본 액션 |".to_string());
+            lines.push(format!(
+                "| {} | {} | {} |",
+                i18n.md_port(),
+                i18n.md_protocol(),
+                i18n.md_default_action()
+            ));
             lines.push("|:---|:---|:---|".to_string());
             for listener in &self.listeners {
                 lines.push(format!(
@@ -210,11 +221,11 @@ impl LoadBalancerDetail {
             lines.push("\n### Target Groups".to_string());
             for tg in &self.target_groups {
                 lines.push(format!("\n#### {}", tg.name));
-                lines.push("\n**기본 정보:**".to_string());
-                lines.push("| 항목 | 값 |".to_string());
+                lines.push(format!("\n**{}**", i18n.md_basic_info()));
+                lines.push(format!("| {} | {} |", i18n.item(), i18n.value()));
                 lines.push("|:---|:---|".to_string());
-                lines.push(format!("| 프로토콜 | {} |", tg.protocol));
-                lines.push(format!("| 포트 | {} |", tg.port));
+                lines.push(format!("| {} | {} |", i18n.md_protocol(), tg.protocol));
+                lines.push(format!("| {} | {} |", i18n.md_port(), tg.port));
                 lines.push(format!("| Target Type | {} |", tg.target_type));
                 lines.push(format!(
                     "| Health Check | {} {} |",
@@ -227,7 +238,11 @@ impl LoadBalancerDetail {
 
                 if !tg.targets.is_empty() {
                     lines.push("\n**Targets:**".to_string());
-                    lines.push("| Target ID | 포트 | 상태 |".to_string());
+                    lines.push(format!(
+                        "| Target ID | {} | {} |",
+                        i18n.md_port(),
+                        i18n.md_state()
+                    ));
                     lines.push("|:---|:---|:---|".to_string());
                     for target in &tg.targets {
                         lines.push(format!(
