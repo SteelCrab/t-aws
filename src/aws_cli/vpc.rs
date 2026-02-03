@@ -3,6 +3,7 @@ use crate::aws_cli::common::{
     run_aws_cli,
 };
 use crate::aws_cli::ec2::get_subnet_name;
+use crate::i18n::{I18n, Language};
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -121,7 +122,8 @@ pub struct NetworkDetail {
 }
 
 impl NetworkDetail {
-    pub fn to_markdown(&self) -> String {
+    pub fn to_markdown(&self, lang: Language) -> String {
+        let i18n = I18n::new(lang);
         let vpc_display = if self.name.is_empty() || self.name == self.id {
             format!("NULL - {}", self.id)
         } else {
@@ -129,22 +131,34 @@ impl NetworkDetail {
         };
         let mut lines = vec![format!("## Network ({})\n", vpc_display)];
 
-        lines.push("| 항목 | 값 |".to_string());
+        lines.push(format!("| {} | {} |", i18n.item(), i18n.value()));
         lines.push("|:---|:---|".to_string());
-        lines.push(format!("| 이름 | {} |", vpc_display));
+        lines.push(format!("| {} | {} |", i18n.md_name(), vpc_display));
         lines.push(format!("| CIDR | {} |", self.cidr));
-        lines.push(format!("| DNS 지원 | {} |", self.dns_support));
-        lines.push(format!("| DNS 호스트 이름 | {} |", self.dns_hostnames));
+        lines.push(format!(
+            "| {} | {} |",
+            i18n.md_dns_support(),
+            self.dns_support
+        ));
+        lines.push(format!(
+            "| {} | {} |",
+            i18n.md_dns_hostnames(),
+            self.dns_hostnames
+        ));
 
         for (key, value) in &self.tags {
             if key != "Name" {
-                lines.push(format!("| 태그-{} | {} |", key, value));
+                lines.push(format!("| {}-{} | {} |", i18n.tag(), key, value));
             }
         }
 
         if !self.subnets.is_empty() {
-            lines.push("\n### 서브넷".to_string());
-            lines.push("| 이름 | CIDR | AZ | 상태 |".to_string());
+            lines.push(format!("\n### {}", i18n.md_subnets()));
+            lines.push(format!(
+                "| {} | CIDR | AZ | {} |",
+                i18n.md_name(),
+                i18n.md_state()
+            ));
             lines.push("|:---|:---|:---|:---|".to_string());
             for subnet in &self.subnets {
                 lines.push(format!(
@@ -155,8 +169,12 @@ impl NetworkDetail {
         }
 
         if !self.igws.is_empty() {
-            lines.push("\n### 인터넷 게이트웨이".to_string());
-            lines.push("| 이름 | 연결된 VPC |".to_string());
+            lines.push(format!("\n### {}", i18n.md_internet_gateway()));
+            lines.push(format!(
+                "| {} | {} |",
+                i18n.md_name(),
+                i18n.md_attached_vpc()
+            ));
             lines.push("|:---|:---|".to_string());
             for igw in &self.igws {
                 let igw_display = if igw.name.is_empty() || igw.name == igw.id {
@@ -169,7 +187,7 @@ impl NetworkDetail {
         }
 
         if !self.nats.is_empty() {
-            lines.push("\n### NAT 게이트웨이".to_string());
+            lines.push(format!("\n### {}", i18n.md_nat_gateway()));
             for nat in &self.nats {
                 let nat_display = if nat.name.is_empty() || nat.name == nat.id {
                     format!("NULL - {}", nat.id)
@@ -177,34 +195,46 @@ impl NetworkDetail {
                     format!("{} - {}", nat.name, nat.id)
                 };
                 lines.push(format!("\n#### {}", nat_display));
-                lines.push("| 항목 | 값 |".to_string());
+                lines.push(format!("| {} | {} |", i18n.item(), i18n.value()));
                 lines.push("|:---|:---|".to_string());
-                lines.push(format!("| 이름 | {} |", nat_display));
+                lines.push(format!("| {} | {} |", i18n.md_name(), nat_display));
 
                 let is_regional = nat.availability_mode == "regional";
                 let availability_mode = if nat.availability_mode.is_empty() {
-                    "영역".to_string()
+                    i18n.md_zonal().to_string()
                 } else if is_regional {
-                    "리전별".to_string()
+                    i18n.md_regional().to_string()
                 } else {
-                    "영역".to_string()
+                    i18n.md_zonal().to_string()
                 };
-                lines.push(format!("| 가용성 모드 | {} |", availability_mode));
+                lines.push(format!(
+                    "| {} | {} |",
+                    i18n.md_availability_mode(),
+                    availability_mode
+                ));
 
                 if is_regional {
                     let auto_scaling = if nat.auto_scaling_ips == "enabled" {
-                        "활성화"
+                        i18n.md_enabled()
                     } else {
-                        "비활성화"
+                        i18n.md_disabled()
                     };
-                    lines.push(format!("| IP 자동 확장 | {} |", auto_scaling));
+                    lines.push(format!(
+                        "| {} | {} |",
+                        i18n.md_ip_auto_scaling(),
+                        auto_scaling
+                    ));
 
                     let auto_provision = if nat.auto_provision_zones == "enabled" {
-                        "활성화"
+                        i18n.md_enabled()
                     } else {
-                        "비활성화"
+                        i18n.md_disabled()
                     };
-                    lines.push(format!("| 영역 자동 프로비저닝 | {} |", auto_provision));
+                    lines.push(format!(
+                        "| {} | {} |",
+                        i18n.md_zone_auto_provisioning(),
+                        auto_provision
+                    ));
                 } else {
                     let subnet_display = self
                         .subnets
@@ -224,29 +254,37 @@ impl NetworkDetail {
                                 format!("NULL - {}", nat.subnet_id)
                             }
                         });
-                    lines.push(format!("| 서브넷 | {} |", subnet_display));
+                    lines.push(format!("| {} | {} |", i18n.md_subnet(), subnet_display));
                 }
 
                 let conn_type =
                     if nat.connectivity_type.is_empty() || nat.connectivity_type == "public" {
-                        "퍼블릭"
+                        i18n.md_public()
                     } else {
-                        "프라이빗"
+                        i18n.md_private()
                     };
-                lines.push(format!("| 연결 유형 | {} |", conn_type));
+                lines.push(format!(
+                    "| {} | {} |",
+                    i18n.md_connectivity_type(),
+                    conn_type
+                ));
 
                 if !nat.allocation_id.is_empty() {
-                    lines.push(format!("| 탄력적 IP 할당 ID | `{}` |", nat.allocation_id));
+                    lines.push(format!(
+                        "| {} | `{}` |",
+                        i18n.md_elastic_ip_allocation_id(),
+                        nat.allocation_id
+                    ));
                 }
 
                 for (key, value) in &nat.tags {
-                    lines.push(format!("| 태그-{} | {} |", key, value));
+                    lines.push(format!("| {}-{} | {} |", i18n.tag(), key, value));
                 }
             }
         }
 
         if !self.route_tables.is_empty() {
-            lines.push("\n### 라우팅 테이블".to_string());
+            lines.push(format!("\n### {}", i18n.md_route_tables()));
             for rt in &self.route_tables {
                 let display_name = if rt.name.is_empty() {
                     format!("NULL - {}", rt.id)
@@ -256,7 +294,12 @@ impl NetworkDetail {
                 lines.push(format!("\n#### {}", display_name));
 
                 if !rt.routes.is_empty() {
-                    lines.push("| 대상 | 대상 | 상태 |".to_string());
+                    lines.push(format!(
+                        "| {} | {} | {} |",
+                        i18n.md_destination(),
+                        i18n.md_target(),
+                        i18n.md_state()
+                    ));
                     lines.push("|:---|:---|:---|".to_string());
                     for route in &rt.routes {
                         let parts: Vec<&str> = route.split('|').collect();
@@ -267,8 +310,8 @@ impl NetworkDetail {
                 }
 
                 if !rt.associations.is_empty() {
-                    lines.push("\n**연결된 서브넷:**".to_string());
-                    lines.push("| 서브넷 |".to_string());
+                    lines.push(format!("\n**{}**", i18n.md_associated_subnets()));
+                    lines.push(format!("| {} |", i18n.md_subnet()));
                     lines.push("|:---|".to_string());
                     for assoc in &rt.associations {
                         lines.push(format!("| {} |", assoc));
@@ -279,7 +322,11 @@ impl NetworkDetail {
 
         if !self.eips.is_empty() {
             lines.push("\n### Elastic IPs".to_string());
-            lines.push("| 이름 | Public IP | 연결 |".to_string());
+            lines.push(format!(
+                "| {} | Public IP | {} |",
+                i18n.md_name(),
+                i18n.md_association()
+            ));
             lines.push("|:---|:---|:---|".to_string());
             for eip in &self.eips {
                 let assoc = if !eip.instance_id.is_empty() {
@@ -293,8 +340,8 @@ impl NetworkDetail {
             }
         }
 
-        // Mermaid 다이어그램 추가
-        lines.push("\n### 네트워크 구성도".to_string());
+        // Network Diagram
+        lines.push(format!("\n### {}", i18n.md_network_diagram()));
         lines.push(self.generate_mermaid());
 
         lines.join("\n") + "\n"

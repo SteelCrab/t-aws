@@ -93,7 +93,7 @@ pub fn process_loading(app: &mut App) {
                         .map(|i| i.id.as_str())
                         .unwrap_or(""),
                 ) {
-                    app.preview_content = new_detail.to_markdown();
+                    app.preview_content = new_detail.to_markdown(app.settings.language);
                     app.preview_filename = format!("{}.md", new_detail.name);
                     app.ec2_detail = Some(new_detail);
                 }
@@ -104,7 +104,7 @@ pub fn process_loading(app: &mut App) {
                         .map(|v| v.id.as_str())
                         .unwrap_or(""),
                 ) {
-                    app.preview_content = new_detail.to_markdown();
+                    app.preview_content = new_detail.to_markdown(app.settings.language);
                     app.preview_filename = format!("{}.md", new_detail.name);
                     app.network_detail = Some(new_detail);
                 }
@@ -116,7 +116,7 @@ pub fn process_loading(app: &mut App) {
                         .unwrap_or(""),
                 )
             {
-                app.preview_content = new_detail.to_markdown();
+                app.preview_content = new_detail.to_markdown(app.settings.language);
                 app.preview_filename = format!("{}.md", new_detail.name);
                 app.sg_detail = Some(new_detail);
             }
@@ -137,7 +137,7 @@ pub fn process_loading(app: &mut App) {
         }
         LoadingTask::LoadEc2Detail(id) => {
             if let Some(detail) = aws_cli::get_instance_detail(&id) {
-                app.preview_content = detail.to_markdown();
+                app.preview_content = detail.to_markdown(app.settings.language);
                 app.preview_filename = format!("{}.md", detail.name);
                 app.ec2_detail = Some(detail);
                 app.screen = Screen::Preview;
@@ -160,7 +160,7 @@ pub fn process_loading(app: &mut App) {
         }
         LoadingTask::LoadSecurityGroupDetail(id) => {
             if let Some(detail) = aws_cli::get_security_group_detail(&id) {
-                app.preview_content = detail.to_markdown();
+                app.preview_content = detail.to_markdown(app.settings.language);
                 app.preview_filename = format!("{}.md", detail.name);
                 app.sg_detail = Some(detail);
                 app.screen = Screen::Preview;
@@ -180,7 +180,7 @@ pub fn process_loading(app: &mut App) {
         }
         LoadingTask::LoadLoadBalancerDetail(arn) => {
             if let Some(detail) = aws_cli::get_load_balancer_detail(&arn) {
-                app.preview_content = detail.to_markdown();
+                app.preview_content = detail.to_markdown(app.settings.language);
                 app.preview_filename = format!("{}.md", detail.name);
                 app.lb_detail = Some(detail);
                 app.screen = Screen::Preview;
@@ -200,7 +200,7 @@ pub fn process_loading(app: &mut App) {
         }
         LoadingTask::LoadEcrDetail(name) => {
             if let Some(detail) = aws_cli::get_ecr_detail(&name) {
-                app.preview_content = detail.to_markdown();
+                app.preview_content = detail.to_markdown(app.settings.language);
                 app.preview_filename = format!("{}.md", detail.name);
                 app.ecr_detail = Some(detail);
                 app.screen = Screen::Preview;
@@ -278,13 +278,13 @@ fn process_blueprint_resources(app: &mut App, current_index: usize) {
     // Fetch resource detail and generate markdown
     let markdown = match resource.resource_type {
         ResourceType::Ec2 => aws_cli::get_instance_detail(&resource.resource_id)
-            .map(|d| d.to_markdown())
+            .map(|d| d.to_markdown(app.settings.language))
             .unwrap_or_else(|| format!("## EC2: {} (조회 실패)\n", resource.resource_name)),
         ResourceType::Network => aws_cli::get_network_detail(&resource.resource_id)
-            .map(|d| d.to_markdown())
+            .map(|d| d.to_markdown(app.settings.language))
             .unwrap_or_else(|| format!("## Network: {} (조회 실패)\n", resource.resource_name)),
         ResourceType::SecurityGroup => aws_cli::get_security_group_detail(&resource.resource_id)
-            .map(|d| d.to_markdown())
+            .map(|d| d.to_markdown(app.settings.language))
             .unwrap_or_else(|| {
                 format!(
                     "## Security Group: {} (조회 실패)\n",
@@ -292,12 +292,12 @@ fn process_blueprint_resources(app: &mut App, current_index: usize) {
                 )
             }),
         ResourceType::LoadBalancer => aws_cli::get_load_balancer_detail(&resource.resource_id)
-            .map(|d| d.to_markdown())
+            .map(|d| d.to_markdown(app.settings.language))
             .unwrap_or_else(|| {
                 format!("## Load Balancer: {} (조회 실패)\n", resource.resource_name)
             }),
         ResourceType::Ecr => aws_cli::get_ecr_detail(&resource.resource_id)
-            .map(|d| d.to_markdown())
+            .map(|d| d.to_markdown(app.settings.language))
             .unwrap_or_else(|| format!("## ECR: {} (조회 실패)\n", resource.resource_name)),
     };
 
@@ -382,7 +382,7 @@ fn process_vpc_detail_step(app: &mut App, vpc_id: &str, step: u8) {
         _ => {
             // 완료: Preview 화면으로 전환
             if let Some(ref detail) = app.network_detail {
-                app.preview_content = detail.to_markdown();
+                app.preview_content = detail.to_markdown(app.settings.language);
                 app.preview_filename = format!("{}.md", detail.name);
             }
             app.screen = Screen::Preview;
