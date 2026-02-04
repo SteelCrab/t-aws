@@ -1044,33 +1044,6 @@ fn handle_settings(app: &mut App, key: KeyEvent) {
     }
 }
 
-fn handle_asg_select(app: &mut App, key: KeyEvent) {
-    match key.code {
-        KeyCode::Up | KeyCode::Char('k') => {
-            if app.selected_index > 0 {
-                app.selected_index -= 1;
-            }
-        }
-        KeyCode::Down | KeyCode::Char('j') => {
-            if app.selected_index < app.auto_scaling_groups.len().saturating_sub(1) {
-                app.selected_index += 1;
-            }
-        }
-        KeyCode::Enter => {
-            if app.selected_index < app.auto_scaling_groups.len() {
-                let asg = &app.auto_scaling_groups[app.selected_index];
-                add_resource_to_blueprint(app, ResourceType::Asg, asg.id.clone(), asg.name.clone());
-            }
-        }
-        KeyCode::Char('r') => {
-            start_loading(app, LoadingTask::RefreshAsg);
-        }
-        KeyCode::Esc => app.screen = Screen::ServiceSelect,
-        KeyCode::Char('q') => app.running = false,
-        _ => {}
-    }
-}
-
 fn add_resource_to_blueprint(
     app: &mut App,
     resource_type: ResourceType,
