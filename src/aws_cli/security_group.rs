@@ -85,9 +85,9 @@ impl SecurityGroupDetail {
     pub fn to_markdown(&self, lang: Language) -> String {
         let i18n = I18n::new(lang);
         let display_name = if self.name.is_empty() || self.name == self.id {
-            format!("NULL - {}", self.id)
+            format!("NULL || {}", self.id)
         } else {
-            format!("{} - {}", self.name, self.id)
+            format!("{} || {}", self.name, self.id)
         };
         let mut lines = vec![
             format!("## Security Group ({})\n", display_name),

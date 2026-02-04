@@ -124,9 +124,9 @@ impl NetworkDetail {
     pub fn to_markdown(&self, lang: Language) -> String {
         let i18n = I18n::new(lang);
         let vpc_display = if self.name.is_empty() || self.name == self.id {
-            format!("NULL - {}", self.id)
+            format!("NULL || {}", self.id)
         } else {
-            format!("{} - {}", self.name, self.id)
+            format!("{} || {}", self.name, self.id)
         };
         let mut lines = vec![format!("## Network ({})\n", vpc_display)];
 
@@ -177,9 +177,9 @@ impl NetworkDetail {
             lines.push("|:---|:---|".to_string());
             for igw in &self.igws {
                 let igw_display = if igw.name.is_empty() || igw.name == igw.id {
-                    format!("NULL - {}", igw.id)
+                    format!("NULL || {}", igw.id)
                 } else {
-                    format!("{} - {}", igw.name, igw.id)
+                    format!("{} || {}", igw.name, igw.id)
                 };
                 lines.push(format!("| {} | {} |", igw_display, vpc_display));
             }
@@ -189,9 +189,9 @@ impl NetworkDetail {
             lines.push(format!("\n### {}", i18n.md_nat_gateway()));
             for nat in &self.nats {
                 let nat_display = if nat.name.is_empty() || nat.name == nat.id {
-                    format!("NULL - {}", nat.id)
+                    format!("NULL || {}", nat.id)
                 } else {
-                    format!("{} - {}", nat.name, nat.id)
+                    format!("{} || {}", nat.name, nat.id)
                 };
                 lines.push(format!("\n#### {}", nat_display));
                 lines.push(format!("| {} | {} |", i18n.item(), i18n.value()));
@@ -241,16 +241,16 @@ impl NetworkDetail {
                         .find(|s| s.id == nat.subnet_id)
                         .map(|s| {
                             if s.name.is_empty() {
-                                format!("NULL - {}", s.id)
+                                format!("NULL || {}", s.id)
                             } else {
-                                format!("{} - {}", s.name, s.id)
+                                format!("{} || {}", s.name, s.id)
                             }
                         })
                         .unwrap_or_else(|| {
                             if nat.subnet_id.is_empty() {
                                 "-".to_string()
                             } else {
-                                format!("NULL - {}", nat.subnet_id)
+                                format!("NULL || {}", nat.subnet_id)
                             }
                         });
                     lines.push(format!("| {} | {} |", i18n.md_subnet(), subnet_display));
@@ -286,9 +286,9 @@ impl NetworkDetail {
             lines.push(format!("\n### {}", i18n.md_route_tables()));
             for rt in &self.route_tables {
                 let display_name = if rt.name.is_empty() {
-                    format!("NULL - {}", rt.id)
+                    format!("NULL || {}", rt.id)
                 } else {
-                    format!("{} - {}", rt.name, rt.id)
+                    format!("{} || {}", rt.name, rt.id)
                 };
                 lines.push(format!("\n#### {}", display_name));
 

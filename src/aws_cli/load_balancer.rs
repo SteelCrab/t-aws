@@ -165,9 +165,9 @@ impl LoadBalancerDetail {
         // Extract LB ID from ARN (last part after the last /)
         let lb_id = self.arn.rsplit('/').next().unwrap_or(&self.arn);
         let display_name = if self.name.is_empty() {
-            format!("NULL - {}", lb_id)
+            format!("NULL || {}", lb_id)
         } else {
-            format!("{} - {}", self.name, lb_id)
+            format!("{} || {}", self.name, lb_id)
         };
         let mut lines = vec![
             format!("## Load Balancer ({})\n", display_name),
