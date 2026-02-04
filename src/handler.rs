@@ -326,19 +326,12 @@ fn process_blueprint_resources(app: &mut App, current_index: usize) {
             .unwrap_or_else(|| format!("## ECR: {} (Query Failed)\n", resource.resource_name)),
         ResourceType::Asg => aws_cli::get_asg_detail(&resource.resource_id)
             .map(|d| d.to_markdown())
-<<<<<<< HEAD
-            .unwrap_or_else(|| format!("## ASG: {} (Query Failed)\n", resource.resource_name)),
-=======
-            .unwrap_or_else(|| format!("## ECR: {} (조회 실패)\n", resource.resource_name)),
-        ResourceType::Asg => aws_cli::get_asg_detail(&resource.resource_id)
-            .map(|d| d.to_markdown())
             .unwrap_or_else(|| {
                 format!(
                     "## Auto Scaling Group: {} (조회 실패)\n",
                     resource.resource_name
                 )
             }),
->>>>>>> 2292d9a (feat(asg): add Auto Scaling Group support)
     };
 
     app.blueprint_markdown_parts.push(markdown);

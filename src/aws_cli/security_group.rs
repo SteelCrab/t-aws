@@ -99,7 +99,7 @@ impl SecurityGroupDetail {
         ];
 
         if !self.inbound_rules.is_empty() {
-            lines.push(format!("\n### {}", i18n.md_inbound_rules()));
+            lines.push(format!("\n### {}\n", i18n.md_inbound_rules()));
             lines.push(format!(
                 "| {} | {} | {} | {} |",
                 i18n.md_protocol(),
@@ -117,7 +117,7 @@ impl SecurityGroupDetail {
         }
 
         if !self.outbound_rules.is_empty() {
-            lines.push(format!("\n### {}", i18n.md_outbound_rules()));
+            lines.push(format!("\n### {}\n", i18n.md_outbound_rules()));
             lines.push(format!(
                 "| {} | {} | {} | {} |",
                 i18n.md_protocol(),

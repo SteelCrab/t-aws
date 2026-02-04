@@ -48,9 +48,9 @@ impl Ec2Detail {
     pub fn to_markdown(&self, lang: Language) -> String {
         let i18n = I18n::new(lang);
         let display_name = if self.name.is_empty() || self.name == self.instance_id {
-            format!("NULL || {}", self.instance_id)
+            format!("NULL - {}", self.instance_id)
         } else {
-            format!("{} || {}", self.name, self.instance_id)
+            format!("{} - {}", self.name, self.instance_id)
         };
         let mut lines = vec![
             format!("## {} ({})\n", i18n.md_ec2_instance(), display_name),
@@ -160,7 +160,7 @@ impl Ec2Detail {
             }
         }
 
-        // Storage section
+        // 스토리지 섹션
         if !self.volumes.is_empty() {
             lines.push(String::new());
             lines.push(format!("### {}\n", i18n.md_storage()));
@@ -257,7 +257,7 @@ fn parse_instance_resources(json: &str) -> Vec<AwsResource> {
                 };
 
                 resources.push(AwsResource {
-                    name: format!("{} || {} || {}", display_name, id, state),
+                    name: format!("{} - {} - {}", display_name, id, state),
                     id: id.to_string(),
                     state: state.clone(),
                     az: String::new(),
@@ -350,9 +350,7 @@ pub fn get_instance_detail(instance_id: &str) -> Option<Ec2Detail> {
         .and_then(|arn| arn.split('/').next_back().map(|s| s.to_string()));
 
     // IAM Role Detail - 역할이 있으면 상세 정보 조회
-    let iam_role_detail = iam_role
-        .as_ref()
-        .and_then(|role_name| get_iam_role_detail(role_name));
+    let iam_role_detail = iam_role.as_ref().and_then(|role_name| get_iam_role_detail(role_name));
 
     // Launch Time
     let launch_time = extract_json_value(json, "LaunchTime").unwrap_or_default();

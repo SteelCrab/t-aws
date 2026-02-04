@@ -152,7 +152,7 @@ impl NetworkDetail {
         }
 
         if !self.subnets.is_empty() {
-            lines.push(format!("\n### {}", i18n.md_subnets()));
+            lines.push(format!("\n### {}\n", i18n.md_subnets()));
             lines.push(format!(
                 "| {} | CIDR | AZ | {} |",
                 i18n.md_name(),
@@ -168,7 +168,7 @@ impl NetworkDetail {
         }
 
         if !self.igws.is_empty() {
-            lines.push(format!("\n### {}", i18n.md_internet_gateway()));
+            lines.push(format!("\n### {}\n", i18n.md_internet_gateway()));
             lines.push(format!(
                 "| {} | {} |",
                 i18n.md_name(),
@@ -290,7 +290,7 @@ impl NetworkDetail {
                 } else {
                     format!("{} || {}", rt.name, rt.id)
                 };
-                lines.push(format!("\n#### {}", display_name));
+                lines.push(format!("\n#### {}\n", display_name));
 
                 if !rt.routes.is_empty() {
                     lines.push(format!(
@@ -309,7 +309,7 @@ impl NetworkDetail {
                 }
 
                 if !rt.associations.is_empty() {
-                    lines.push(format!("\n**{}**", i18n.md_associated_subnets()));
+                    lines.push(format!("\n**{}:**\n", i18n.md_associated_subnets()));
                     lines.push(format!("| {} |", i18n.md_subnet()));
                     lines.push("|:---|".to_string());
                     for assoc in &rt.associations {
@@ -320,7 +320,7 @@ impl NetworkDetail {
         }
 
         if !self.eips.is_empty() {
-            lines.push("\n### Elastic IPs".to_string());
+            lines.push("\n### Elastic IPs\n".to_string());
             lines.push(format!(
                 "| {} | Public IP | {} |",
                 i18n.md_name(),

@@ -203,7 +203,7 @@ impl LoadBalancerDetail {
         }
 
         if !self.listeners.is_empty() {
-            lines.push("\n### Listeners".to_string());
+            lines.push("\n### Listeners\n".to_string());
             lines.push(format!(
                 "| {} | {} | {} |",
                 i18n.md_port(),
@@ -222,8 +222,8 @@ impl LoadBalancerDetail {
         if !self.target_groups.is_empty() {
             lines.push("\n### Target Groups".to_string());
             for tg in &self.target_groups {
-                lines.push(format!("\n#### {}", tg.name));
-                lines.push(format!("\n**{}**", i18n.md_basic_info()));
+                lines.push(format!("\n#### {}\n", tg.name));
+                lines.push(format!("\n**{}:**\n", i18n.md_basic_info()));
                 lines.push(format!("| {} | {} |", i18n.item(), i18n.value()));
                 lines.push("|:---|:---|".to_string());
                 lines.push(format!("| {} | {} |", i18n.md_protocol(), tg.protocol));
@@ -249,7 +249,7 @@ impl LoadBalancerDetail {
                 ));
 
                 if !tg.targets.is_empty() {
-                    lines.push(format!("\n**{}**", i18n.md_targets()));
+                    lines.push(format!("\n**{}:**\n", i18n.md_targets()));
                     lines.push(format!(
                         "| Target ID | {} | {} |",
                         i18n.md_port(),
