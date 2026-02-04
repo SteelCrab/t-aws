@@ -2,7 +2,7 @@ use crate::aws_cli::common::AwsResource;
 use crate::i18n::{I18n, Language};
 use aws_config::BehaviorVersion;
 use aws_sdk_ecr::types::ImageDetail;
-use chrono::{DateTime, NaiveDateTime};
+use chrono::DateTime;
 use serde::Deserialize;
 
 #[derive(Debug)]
@@ -86,7 +86,10 @@ pub fn list_ecr_repositories() -> Vec<AwsResource> {
                 .map(|repo| {
                     let name = repo.repository_name().unwrap_or("").to_string();
                     let uri = repo.repository_uri().unwrap_or("").to_string();
-                    let mutability_raw = repo.image_tag_mutability().as_str();
+                    let mutability_raw = repo
+                        .image_tag_mutability()
+                        .map(|m| m.as_str())
+                        .unwrap_or("UNKNOWN");
 
                     let mutability = if mutability_raw == "IMMUTABLE" {
                         "Immutable"
@@ -143,56 +146,55 @@ pub fn get_ecr_detail(repo_name: &str) -> Option<EcrDetail> {
             image_count = output.image_details().len() as i32;
 
             for img in output.image_details() {
-                if let Some(tags) = img.image_tags() {
-                    for tag in tags {
-                        let size_mb =
-                            img.image_size_in_bytes().unwrap_or(0) as f64 / 1024.0 / 1024.0;
-                        let pushed_at = img
-                            .image_pushed_at()
-                            .map(|ts| {
-                                let secs = ts.secs() as i64;
-                                DateTime::from_timestamp(secs, 0)
-                                    .map(|dt| dt.format("%Y-%m-%d %H:%M").to_string())
-                                    .unwrap_or_else(|| "-".to_string())
-                            })
-                            .unwrap_or_else(|| "-".to_string());
+                // AWS SDK 메서드 image_tags()는 슬라이스를 반환함 (&[String])
+                let tags = img.image_tags();
+                for tag in tags {
+                    let size_mb = img.image_size_in_bytes().unwrap_or(0) as f64 / 1024.0 / 1024.0;
+                    let pushed_at = img
+                        .image_pushed_at()
+                        .map(|ts| {
+                            let secs = ts.secs() as i64;
+                            DateTime::from_timestamp(secs, 0)
+                                .map(|dt| dt.format("%Y-%m-%d %H:%M").to_string())
+                                .unwrap_or_else(|| "-".to_string())
+                        })
+                        .unwrap_or_else(|| "-".to_string());
 
-                        let scan_status = img
-                            .image_scan_findings_summary()
-                            .map(|s| {
-                                let mut parts = Vec::new();
-                                if let Some(counts) = s.finding_severity_counts() {
-                                    if let Some(&cnt) =
-                                        counts.get(&aws_sdk_ecr::types::FindingSeverity::Critical)
-                                    {
-                                        if cnt > 0 {
-                                            parts.push(format!("CRITICAL:{}", cnt));
-                                        }
-                                    }
-                                    if let Some(&cnt) =
-                                        counts.get(&aws_sdk_ecr::types::FindingSeverity::High)
-                                    {
-                                        if cnt > 0 {
-                                            parts.push(format!("HIGH:{}", cnt));
-                                        }
+                    let scan_status = img
+                        .image_scan_findings_summary()
+                        .map(|s| {
+                            let mut parts = Vec::new();
+                            if let Some(counts) = s.finding_severity_counts() {
+                                if let Some(&cnt) =
+                                    counts.get(&aws_sdk_ecr::types::FindingSeverity::Critical)
+                                {
+                                    if cnt > 0 {
+                                        parts.push(format!("CRITICAL:{}", cnt));
                                     }
                                 }
-                                if parts.is_empty() {
-                                    "Passed".to_string()
-                                } else {
-                                    parts.join(", ")
+                                if let Some(&cnt) =
+                                    counts.get(&aws_sdk_ecr::types::FindingSeverity::High)
+                                {
+                                    if cnt > 0 {
+                                        parts.push(format!("HIGH:{}", cnt));
+                                    }
                                 }
-                            })
-                            .unwrap_or_else(|| "No Scan".to_string());
+                            }
+                            if parts.is_empty() {
+                                "Passed".to_string()
+                            } else {
+                                parts.join(", ")
+                            }
+                        })
+                        .unwrap_or_else(|| "No Scan".to_string());
 
-                        images.push(EcrImageInfo {
-                            tag: tag.clone(),
-                            digest: img.image_digest().unwrap_or("").to_string(),
-                            size_mb,
-                            pushed_at,
-                            scan_status,
-                        });
-                    }
+                    images.push(EcrImageInfo {
+                        tag: tag.clone(),
+                        digest: img.image_digest().unwrap_or("").to_string(),
+                        size_mb,
+                        pushed_at,
+                        scan_status,
+                    });
                 }
             }
         }
@@ -217,10 +219,16 @@ pub fn get_ecr_detail(repo_name: &str) -> Option<EcrDetail> {
             })
             .unwrap_or_else(|| ("AES256".to_string(), None));
 
+        let tag_mutability = repo
+            .image_tag_mutability()
+            .map(|m| m.as_str())
+            .unwrap_or("UNKNOWN")
+            .to_string();
+
         Some(EcrDetail {
             name: repo.repository_name().unwrap_or("").to_string(),
             uri: repo.repository_uri().unwrap_or("").to_string(),
-            tag_mutability: repo.image_tag_mutability().as_str().to_string(),
+            tag_mutability,
             encryption_type,
             kms_key,
             created_at,
