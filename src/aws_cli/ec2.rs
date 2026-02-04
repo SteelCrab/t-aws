@@ -48,9 +48,9 @@ impl Ec2Detail {
     pub fn to_markdown(&self, lang: Language) -> String {
         let i18n = I18n::new(lang);
         let display_name = if self.name.is_empty() || self.name == self.instance_id {
-            format!("NULL - {}", self.instance_id)
+            format!("NULL · {}", self.instance_id)
         } else {
-            format!("{} - {}", self.name, self.instance_id)
+            format!("{} · {}", self.name, self.instance_id)
         };
         let mut lines = vec![
             format!("## {} ({})\n", i18n.md_ec2_instance(), display_name),
