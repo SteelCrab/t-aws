@@ -1,6 +1,7 @@
 use crate::aws_cli::common::{
     AwsResource, extract_json_value, extract_tags, parse_name_tag, run_aws_cli,
 };
+use crate::aws_cli::iam::{IamRoleDetail, get_iam_role_detail};
 use crate::i18n::{I18n, Language};
 use base64::{Engine as _, engine::general_purpose};
 use serde::Deserialize;
@@ -36,6 +37,7 @@ pub struct Ec2Detail {
     pub ebs_optimized: bool,
     pub monitoring: String,
     pub iam_role: Option<String>,
+    pub iam_role_detail: Option<IamRoleDetail>,
     pub launch_time: String,
     pub tags: Vec<(String, String)>,
     pub volumes: Vec<VolumeDetail>,
@@ -119,6 +121,43 @@ impl Ec2Detail {
                 i18n.md_launch_time(),
                 self.launch_time
             ));
+        }
+
+        // IAM 역할 상세 섹션
+        if let Some(ref iam_detail) = self.iam_role_detail {
+            lines.push(String::new());
+            lines.push(format!("### IAM 역할 상세 ({})\n", iam_detail.name));
+
+            // 연결된 정책
+            if !iam_detail.attached_policies.is_empty() {
+                lines.push("#### 연결된 정책 (Attached Policies)\n".to_string());
+                lines.push("| 정책 이름 | ARN |".to_string());
+                lines.push("|:---|:---|".to_string());
+                for policy in &iam_detail.attached_policies {
+                    lines.push(format!("| {} | {} |", policy.name, policy.arn));
+                }
+                lines.push(String::new());
+            }
+
+            // 인라인 정책
+            if !iam_detail.inline_policies.is_empty() {
+                lines.push("#### 인라인 정책 (Inline Policies)\n".to_string());
+                for policy in &iam_detail.inline_policies {
+                    lines.push(format!("**{}**\n", policy.name));
+                    lines.push("```json".to_string());
+                    lines.push(policy.document.clone());
+                    lines.push("```".to_string());
+                    lines.push(String::new());
+                }
+            }
+
+            // 신뢰 정책
+            if !iam_detail.assume_role_policy.is_empty() {
+                lines.push("#### 신뢰 관계 (Trust Policy)\n".to_string());
+                lines.push("```json".to_string());
+                lines.push(iam_detail.assume_role_policy.clone());
+                lines.push("```".to_string());
+            }
         }
 
         // Storage section
@@ -310,6 +349,11 @@ pub fn get_instance_detail(instance_id: &str) -> Option<Ec2Detail> {
     let iam_role = extract_json_value(json, "Arn")
         .and_then(|arn| arn.split('/').next_back().map(|s| s.to_string()));
 
+    // IAM Role Detail - 역할이 있으면 상세 정보 조회
+    let iam_role_detail = iam_role
+        .as_ref()
+        .and_then(|role_name| get_iam_role_detail(role_name));
+
     // Launch Time
     let launch_time = extract_json_value(json, "LaunchTime").unwrap_or_default();
 
@@ -342,6 +386,7 @@ pub fn get_instance_detail(instance_id: &str) -> Option<Ec2Detail> {
         ebs_optimized,
         monitoring,
         iam_role,
+        iam_role_detail,
         launch_time,
         tags,
         volumes,

@@ -1,6 +1,7 @@
 mod common;
 mod ec2;
 mod ecr;
+pub(crate) mod iam;
 mod load_balancer;
 mod security_group;
 mod vpc;
