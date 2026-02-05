@@ -428,6 +428,36 @@ fn start_loading(app: &mut App, task: LoadingTask) {
     app.message = app.i18n.loading_msg().to_string();
 }
 
+/// Add a resource directly to the current blueprint
+fn add_resource_to_blueprint(
+    app: &mut App,
+    resource_type: ResourceType,
+    resource_id: String,
+    resource_name: String,
+) {
+    let region = REGIONS[app.selected_region].code.to_string();
+    let resource = BlueprintResource {
+        resource_type,
+        region,
+        resource_id,
+        resource_name,
+    };
+
+    if let Some(ref mut bp) = app.current_blueprint {
+        bp.add_resource(resource);
+        app.message = app.i18n.resource_added().to_string();
+
+        // Update in store
+        if let Some(stored) = app
+            .blueprint_store
+            .get_blueprint_mut(app.selected_blueprint_index.saturating_sub(1))
+        {
+            *stored = bp.clone();
+        }
+        app.save_blueprints();
+    }
+}
+
 fn handle_login(app: &mut App, key: KeyEvent) {
     match key.code {
         KeyCode::Enter => app.check_login(),
@@ -731,8 +761,13 @@ fn handle_ec2_select(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Enter => {
             if app.selected_index < app.instances.len() {
-                let id = app.instances[app.selected_index].id.clone();
-                start_loading(app, LoadingTask::LoadEc2Detail(id));
+                let inst = &app.instances[app.selected_index];
+                add_resource_to_blueprint(
+                    app,
+                    ResourceType::Ec2,
+                    inst.id.clone(),
+                    inst.name.clone(),
+                );
             }
         }
         KeyCode::Char('r') => {
@@ -758,8 +793,13 @@ fn handle_vpc_select(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Enter => {
             if app.selected_index < app.vpcs.len() {
-                let id = app.vpcs[app.selected_index].id.clone();
-                start_loading(app, LoadingTask::LoadVpcDetail(id, 0));
+                let vpc = &app.vpcs[app.selected_index];
+                add_resource_to_blueprint(
+                    app,
+                    ResourceType::Network,
+                    vpc.id.clone(),
+                    vpc.name.clone(),
+                );
             }
         }
         KeyCode::Char('r') => {
@@ -785,8 +825,13 @@ fn handle_security_group_select(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Enter => {
             if app.selected_index < app.security_groups.len() {
-                let id = app.security_groups[app.selected_index].id.clone();
-                start_loading(app, LoadingTask::LoadSecurityGroupDetail(id));
+                let sg = &app.security_groups[app.selected_index];
+                add_resource_to_blueprint(
+                    app,
+                    ResourceType::SecurityGroup,
+                    sg.id.clone(),
+                    sg.name.clone(),
+                );
             }
         }
         KeyCode::Char('r') => {
@@ -812,8 +857,13 @@ fn handle_load_balancer_select(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Enter => {
             if app.selected_index < app.load_balancers.len() {
-                let arn = app.load_balancers[app.selected_index].id.clone();
-                start_loading(app, LoadingTask::LoadLoadBalancerDetail(arn));
+                let lb = &app.load_balancers[app.selected_index];
+                add_resource_to_blueprint(
+                    app,
+                    ResourceType::LoadBalancer,
+                    lb.id.clone(),
+                    lb.name.clone(),
+                );
             }
         }
         KeyCode::Char('r') => {
@@ -839,8 +889,13 @@ fn handle_ecr_select(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Enter => {
             if app.selected_index < app.ecr_repositories.len() {
-                let name = app.ecr_repositories[app.selected_index].id.clone();
-                start_loading(app, LoadingTask::LoadEcrDetail(name));
+                let repo = &app.ecr_repositories[app.selected_index];
+                add_resource_to_blueprint(
+                    app,
+                    ResourceType::Ecr,
+                    repo.id.clone(),
+                    repo.name.clone(),
+                );
             }
         }
         KeyCode::Char('r') => {
