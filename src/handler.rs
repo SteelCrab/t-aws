@@ -441,6 +441,36 @@ fn start_loading(app: &mut App, task: LoadingTask) {
     app.message = app.i18n.loading_msg().to_string();
 }
 
+/// Add a resource directly to the current blueprint
+fn add_resource_to_blueprint(
+    app: &mut App,
+    resource_type: ResourceType,
+    resource_id: String,
+    resource_name: String,
+) {
+    let region = REGIONS[app.selected_region].code.to_string();
+    let resource = BlueprintResource {
+        resource_type,
+        region,
+        resource_id,
+        resource_name,
+    };
+
+    if let Some(ref mut bp) = app.current_blueprint {
+        bp.add_resource(resource);
+        app.message = app.i18n.resource_added().to_string();
+
+        // Update in store
+        if let Some(stored) = app
+            .blueprint_store
+            .get_blueprint_mut(app.selected_blueprint_index.saturating_sub(1))
+        {
+            *stored = bp.clone();
+        }
+        app.save_blueprints();
+    }
+}
+
 fn handle_login(app: &mut App, key: KeyEvent) {
     match key.code {
         KeyCode::Enter => app.check_login(),
