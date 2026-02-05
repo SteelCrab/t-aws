@@ -15,7 +15,7 @@ base64 = "0.22.1"
 clap = { version = "4.5", features = ["derive"] }
 self_update = { version = "0.42", default-features = false, features = ["archive-tar", "compression-flate2", "rustls"] }
 tokio = { version = "1.49.0", features = ["rt", "macros", "rt-multi-thread"] }
-aws-config = "1.8.13"
+aws-config = { version = "1.8.13", features = ["behavior-version-latest", "rustls"] }
 aws-sdk-autoscaling = "1.70"
 aws-sdk-ecr = "1.106.0"
 aws-credential-types = "1.2"

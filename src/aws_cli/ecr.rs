@@ -1,4 +1,4 @@
-use crate::aws_cli::common::AwsResource;
+use crate::aws_cli::common::{AwsResource, get_runtime, get_sdk_config};
 use crate::i18n::{I18n, Language};
 use aws_config::BehaviorVersion;
 use aws_sdk_ecr::types::ImageDetail;
@@ -56,12 +56,10 @@ impl EcrDetail {
             lines.push("| 태그 | 크기 (MB) | 푸시 날짜 | 스캔 상태 |".to_string());
             lines.push("|:---|---:|:---|:---|".to_string());
 
-            // 최근 푸시된 순서로 정렬 (이미 정렬되어 있을 수 있지만 확실히 하기 위해)
             let mut images = self.images.iter().collect::<Vec<_>>();
             images.sort_by(|a, b| b.pushed_at.cmp(&a.pushed_at));
 
             for img in images.iter().take(20) {
-                // 최근 20개만 표시
                 lines.push(format!(
                     "| {} | {:.2} | {} | {} |",
                     img.tag, img.size_mb, img.pushed_at, img.scan_status
@@ -74,11 +72,11 @@ impl EcrDetail {
 }
 
 pub fn list_ecr_repositories() -> Vec<AwsResource> {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async {
-        let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-        let client = aws_sdk_ecr::Client::new(&config);
+    let rt = get_runtime();
+    let config = get_sdk_config();
+    let client = aws_sdk_ecr::Client::new(&config);
 
+    rt.block_on(async {
         match client.describe_repositories().send().await {
             Ok(output) => output
                 .repositories()
@@ -107,7 +105,7 @@ pub fn list_ecr_repositories() -> Vec<AwsResource> {
                 })
                 .collect(),
             Err(e) => {
-                eprintln!("Error listing ECR repositories: {}", e);
+                eprintln!("Error listing ECR repositories: {:?}", e);
                 Vec::new()
             }
         }
@@ -115,11 +113,11 @@ pub fn list_ecr_repositories() -> Vec<AwsResource> {
 }
 
 pub fn get_ecr_detail(repo_name: &str) -> Option<EcrDetail> {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async {
-        let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-        let client = aws_sdk_ecr::Client::new(&config);
+    let rt = get_runtime();
+    let config = get_sdk_config();
+    let client = aws_sdk_ecr::Client::new(&config);
 
+    rt.block_on(async {
         // 1. 레포지토리 정보 조회
         let repo_output = client
             .describe_repositories()
@@ -138,7 +136,6 @@ pub fn get_ecr_detail(repo_name: &str) -> Option<EcrDetail> {
             .await
             .ok();
 
-        // 이미지 정보 파싱
         let mut images = Vec::new();
         let mut image_count = 0;
 
@@ -146,7 +143,6 @@ pub fn get_ecr_detail(repo_name: &str) -> Option<EcrDetail> {
             image_count = output.image_details().len() as i32;
 
             for img in output.image_details() {
-                // AWS SDK 메서드 image_tags()는 슬라이스를 반환함 (&[String])
                 let tags = img.image_tags();
                 for tag in tags {
                     let size_mb = img.image_size_in_bytes().unwrap_or(0) as f64 / 1024.0 / 1024.0;
