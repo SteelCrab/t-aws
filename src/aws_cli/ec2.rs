@@ -1,6 +1,7 @@
 use crate::aws_cli::common::{
     AwsResource, extract_json_value, extract_tags, parse_name_tag, run_aws_cli,
 };
+use crate::i18n::{I18n, Language};
 use base64::{Engine as _, engine::general_purpose};
 use serde::Deserialize;
 
@@ -42,68 +43,96 @@ pub struct Ec2Detail {
 }
 
 impl Ec2Detail {
-    pub fn to_markdown(&self) -> String {
+    pub fn to_markdown(&self, lang: Language) -> String {
+        let i18n = I18n::new(lang);
         let display_name = if self.name.is_empty() || self.name == self.instance_id {
             format!("NULL - {}", self.instance_id)
         } else {
             format!("{} - {}", self.name, self.instance_id)
         };
         let mut lines = vec![
-            format!("## EC2 인스턴스 ({})\n", display_name),
-            "| 항목 | 값 |".to_string(),
+            format!("## {} ({})\n", i18n.md_ec2_instance(), display_name),
+            format!("| {} | {} |", i18n.item(), i18n.value()),
             "|:---|:---|".to_string(),
-            format!("| 이름 | {} |", display_name),
-            format!("| 상태 | {} |", self.state),
+            format!("| {} | {} |", i18n.md_name(), display_name),
+            format!("| {} | {} |", i18n.md_state(), self.state),
         ];
 
         for (key, value) in &self.tags {
             if key != "Name" {
-                lines.push(format!("| 태그-{} | {} |", key, value));
+                lines.push(format!("| {}-{} | {} |", i18n.tag(), key, value));
             }
         }
 
         lines.push(format!("| AMI | {} |", self.ami));
-        lines.push(format!("| 인스턴스 유형 | {} |", self.instance_type));
-        lines.push(format!("| 플랫폼 | {} |", self.platform));
-        lines.push(format!("| 아키텍처 | {} |", self.architecture));
-        lines.push(format!("| 키 페어 | {} |", self.key_pair));
+        lines.push(format!(
+            "| {} | {} |",
+            i18n.md_instance_type(),
+            self.instance_type
+        ));
+        lines.push(format!("| {} | {} |", i18n.md_platform(), self.platform));
+        lines.push(format!(
+            "| {} | {} |",
+            i18n.md_architecture(),
+            self.architecture
+        ));
+        lines.push(format!("| {} | {} |", i18n.md_key_pair(), self.key_pair));
         lines.push(format!("| VPC | {} |", self.vpc));
-        lines.push(format!("| 서브넷 | {} |", self.subnet));
-        lines.push(format!("| 가용 영역 | {} |", self.az));
-        lines.push(format!("| 프라이빗 IP | {} |", self.private_ip));
+        lines.push(format!("| {} | {} |", i18n.md_subnet(), self.subnet));
+        lines.push(format!("| {} | {} |", i18n.md_availability_zone(), self.az));
+        lines.push(format!(
+            "| {} | {} |",
+            i18n.md_private_ip(),
+            self.private_ip
+        ));
 
         if self.public_ip != "-" && !self.public_ip.is_empty() {
-            lines.push(format!("| 퍼블릭 IP | {} |", self.public_ip));
+            lines.push(format!("| {} | {} |", i18n.md_public_ip(), self.public_ip));
         }
 
         lines.push(format!(
-            "| 보안 그룹 | {} |",
+            "| {} | {} |",
+            i18n.md_security_groups(),
             self.security_groups.join(", ")
         ));
 
         let ebs_str = if self.ebs_optimized {
-            "활성화"
+            i18n.md_enabled()
         } else {
-            "비활성화"
+            i18n.md_disabled()
         };
-        lines.push(format!("| EBS 최적화 | {} |", ebs_str));
-        lines.push(format!("| 모니터링 | {} |", self.monitoring));
+        lines.push(format!("| {} | {} |", i18n.md_ebs_optimized(), ebs_str));
+        let monitoring_str = if self.monitoring == "Enabled" {
+            i18n.md_enabled()
+        } else {
+            i18n.md_disabled()
+        };
+        lines.push(format!("| {} | {} |", i18n.md_monitoring(), monitoring_str));
 
         if let Some(ref role) = self.iam_role {
-            lines.push(format!("| IAM 역할 | {} |", role));
+            lines.push(format!("| {} | {} |", i18n.md_iam_role(), role));
         }
 
         if !self.launch_time.is_empty() {
-            lines.push(format!("| 시작 시간 | {} |", self.launch_time));
+            lines.push(format!(
+                "| {} | {} |",
+                i18n.md_launch_time(),
+                self.launch_time
+            ));
         }
 
-        // 스토리지 섹션
+        // Storage section
         if !self.volumes.is_empty() {
             lines.push(String::new());
-            lines.push("### 스토리지\n".to_string());
-            lines.push(
-                "| 디바이스 | 볼륨 ID | 크기 | 유형 | IOPS | 암호화 | 종료 시 삭제 |".to_string(),
-            );
+            lines.push(format!("### {}\n", i18n.md_storage()));
+            lines.push(format!(
+                "| {} | Volume ID | {} | {} | IOPS | {} | {} |",
+                i18n.md_device(),
+                i18n.md_size(),
+                i18n.md_type(),
+                i18n.md_encrypted(),
+                i18n.md_delete_on_termination()
+            ));
             lines.push("|:---|:---|---:|:---|---:|:---:|:---:|".to_string());
 
             for vol in &self.volumes {
@@ -130,10 +159,10 @@ impl Ec2Detail {
             }
         }
 
-        // 사용자 데이터 섹션
+        // User Data section
         if let Some(ref user_data) = self.user_data {
             lines.push(String::new());
-            lines.push("### 사용자 데이터\n".to_string());
+            lines.push(format!("### {}\n", i18n.md_user_data()));
             lines.push("```bash".to_string());
             lines.push(user_data.clone());
             lines.push("```".to_string());
@@ -272,9 +301,9 @@ pub fn get_instance_detail(instance_id: &str) -> Option<Ec2Detail> {
 
     // Monitoring
     let monitoring = if json.contains("\"State\": \"enabled\"") {
-        "활성화".to_string()
+        "Enabled".to_string()
     } else {
-        "비활성화".to_string()
+        "Disabled".to_string()
     };
 
     // IAM Role (from IamInstanceProfile)

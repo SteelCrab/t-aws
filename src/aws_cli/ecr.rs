@@ -1,4 +1,5 @@
 use crate::aws_cli::common::{AwsResource, run_aws_cli};
+use crate::i18n::{I18n, Language};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -52,7 +53,8 @@ pub struct EcrDetail {
 }
 
 impl EcrDetail {
-    pub fn to_markdown(&self) -> String {
+    pub fn to_markdown(&self, lang: Language) -> String {
+        let i18n = I18n::new(lang);
         let encryption_display = if self.encryption_type == "KMS" {
             if let Some(ref key) = self.kms_key {
                 format!("AWS KMS ({})", key)
@@ -64,15 +66,15 @@ impl EcrDetail {
         };
 
         let lines = vec![
-            format!("## ECR 레포지토리 ({})\n", self.name),
-            "| 항목 | 값 |".to_string(),
+            format!("## {} ({})\n", i18n.md_ecr_repository(), self.name),
+            format!("| {} | {} |", i18n.item(), i18n.value()),
             "|:---|:---|".to_string(),
-            format!("| 이름 | {} |", self.name),
+            format!("| {} | {} |", i18n.md_name(), self.name),
             format!("| URI | {} |", self.uri),
-            format!("| 태그 변경 가능 | {} |", self.tag_mutability),
-            format!("| 암호화 | {} |", encryption_display),
-            format!("| 이미지 수 | {} |", self.image_count),
-            format!("| 생성일 | {} |", self.created_at),
+            format!("| {} | {} |", i18n.md_tag_mutability(), self.tag_mutability),
+            format!("| {} | {} |", i18n.md_encryption(), encryption_display),
+            format!("| {} | {} |", i18n.md_image_count(), self.image_count),
+            format!("| {} | {} |", i18n.md_created_at(), self.created_at),
         ];
 
         lines.join("\n") + "\n"

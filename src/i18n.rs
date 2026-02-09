@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum Language {
-    #[default]
     Korean,
+    #[default]
     English,
 }
 
@@ -601,8 +601,7 @@ impl I18n {
         }
     }
 
-    // Table headers for markdown (reserved for future use)
-    #[allow(dead_code)]
+    // Table headers for markdown
     pub fn item(&self) -> &'static str {
         match self.lang {
             Language::Korean => "항목",
@@ -610,7 +609,6 @@ impl I18n {
         }
     }
 
-    #[allow(dead_code)]
     pub fn value(&self) -> &'static str {
         match self.lang {
             Language::Korean => "값",
@@ -618,23 +616,20 @@ impl I18n {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn name(&self) -> &'static str {
+    pub fn md_name(&self) -> &'static str {
         match self.lang {
             Language::Korean => "이름",
             Language::English => "Name",
         }
     }
 
-    #[allow(dead_code)]
-    pub fn state(&self) -> &'static str {
+    pub fn md_state(&self) -> &'static str {
         match self.lang {
             Language::Korean => "상태",
             Language::English => "State",
         }
     }
 
-    #[allow(dead_code)]
     pub fn tag(&self) -> &'static str {
         match self.lang {
             Language::Korean => "태그",
@@ -643,7 +638,6 @@ impl I18n {
     }
 
     // Toc
-    #[allow(dead_code)]
     pub fn toc(&self) -> &'static str {
         match self.lang {
             Language::Korean => "📑 목차",
@@ -652,11 +646,492 @@ impl I18n {
     }
 
     // Query failed
-    #[allow(dead_code)]
     pub fn query_failed(&self) -> &'static str {
         match self.lang {
             Language::Korean => "조회 실패",
             Language::English => "Query failed",
+        }
+    }
+
+    // VPC/Network markdown labels
+    pub fn md_dns_support(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "DNS 지원",
+            Language::English => "DNS Support",
+        }
+    }
+
+    pub fn md_dns_hostnames(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "DNS 호스트 이름",
+            Language::English => "DNS Hostnames",
+        }
+    }
+
+    pub fn md_subnets(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "서브넷",
+            Language::English => "Subnets",
+        }
+    }
+
+    pub fn md_internet_gateway(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "인터넷 게이트웨이",
+            Language::English => "Internet Gateway",
+        }
+    }
+
+    pub fn md_attached_vpc(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "연결된 VPC",
+            Language::English => "Attached VPC",
+        }
+    }
+
+    pub fn md_nat_gateway(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "NAT 게이트웨이",
+            Language::English => "NAT Gateway",
+        }
+    }
+
+    pub fn md_availability_mode(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "가용성 모드",
+            Language::English => "Availability Mode",
+        }
+    }
+
+    pub fn md_zonal(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "영역",
+            Language::English => "Zonal",
+        }
+    }
+
+    pub fn md_regional(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "리전별",
+            Language::English => "Regional",
+        }
+    }
+
+    pub fn md_ip_auto_scaling(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "IP 자동 확장",
+            Language::English => "IP Auto Scaling",
+        }
+    }
+
+    pub fn md_zone_auto_provisioning(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "영역 자동 프로비저닝",
+            Language::English => "Zone Auto Provisioning",
+        }
+    }
+
+    pub fn md_enabled(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "활성화",
+            Language::English => "Enabled",
+        }
+    }
+
+    pub fn md_disabled(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "비활성화",
+            Language::English => "Disabled",
+        }
+    }
+
+    pub fn md_subnet(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "서브넷",
+            Language::English => "Subnet",
+        }
+    }
+
+    pub fn md_connectivity_type(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "연결 유형",
+            Language::English => "Connectivity Type",
+        }
+    }
+
+    pub fn md_public(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "퍼블릭",
+            Language::English => "Public",
+        }
+    }
+
+    pub fn md_private(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "프라이빗",
+            Language::English => "Private",
+        }
+    }
+
+    pub fn md_elastic_ip_allocation_id(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "탄력적 IP 할당 ID",
+            Language::English => "Elastic IP Allocation ID",
+        }
+    }
+
+    pub fn md_route_tables(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "라우팅 테이블",
+            Language::English => "Route Tables",
+        }
+    }
+
+    pub fn md_destination(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "대상",
+            Language::English => "Destination",
+        }
+    }
+
+    pub fn md_target(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "대상",
+            Language::English => "Target",
+        }
+    }
+
+    pub fn md_associated_subnets(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "연결된 서브넷:",
+            Language::English => "Associated Subnets:",
+        }
+    }
+
+    pub fn md_association(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "연결",
+            Language::English => "Association",
+        }
+    }
+
+    pub fn md_network_diagram(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "네트워크 구성도",
+            Language::English => "Network Diagram",
+        }
+    }
+
+    // Security Group markdown labels
+    pub fn md_description(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "설명",
+            Language::English => "Description",
+        }
+    }
+
+    pub fn md_inbound_rules(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "인바운드 규칙",
+            Language::English => "Inbound Rules",
+        }
+    }
+
+    pub fn md_outbound_rules(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "아웃바운드 규칙",
+            Language::English => "Outbound Rules",
+        }
+    }
+
+    pub fn md_protocol(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "프로토콜",
+            Language::English => "Protocol",
+        }
+    }
+
+    pub fn md_port_range(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "포트 범위",
+            Language::English => "Port Range",
+        }
+    }
+
+    pub fn md_source(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "소스",
+            Language::English => "Source",
+        }
+    }
+
+    // Load Balancer markdown labels
+    pub fn md_dns_name(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "DNS 이름",
+            Language::English => "DNS Name",
+        }
+    }
+
+    pub fn md_type(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "타입",
+            Language::English => "Type",
+        }
+    }
+
+    pub fn md_ip_address_type(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "IP 주소 유형",
+            Language::English => "IP Address Type",
+        }
+    }
+
+    pub fn md_port(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "포트",
+            Language::English => "Port",
+        }
+    }
+
+    pub fn md_default_action(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "기본 액션",
+            Language::English => "Default Action",
+        }
+    }
+
+    pub fn md_basic_info(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "기본 정보:",
+            Language::English => "Basic Info:",
+        }
+    }
+
+    // EC2 markdown labels
+    pub fn md_ec2_instance(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "EC2 인스턴스",
+            Language::English => "EC2 Instance",
+        }
+    }
+
+    pub fn md_instance_type(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "인스턴스 유형",
+            Language::English => "Instance Type",
+        }
+    }
+
+    pub fn md_platform(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "플랫폼",
+            Language::English => "Platform",
+        }
+    }
+
+    pub fn md_architecture(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "아키텍처",
+            Language::English => "Architecture",
+        }
+    }
+
+    pub fn md_key_pair(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "키 페어",
+            Language::English => "Key Pair",
+        }
+    }
+
+    pub fn md_availability_zone(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "가용 영역",
+            Language::English => "Availability Zone",
+        }
+    }
+
+    pub fn md_availability_zones(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "가용 영역",
+            Language::English => "Availability Zones",
+        }
+    }
+
+    pub fn md_private_ip(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "프라이빗 IP",
+            Language::English => "Private IP",
+        }
+    }
+
+    pub fn md_public_ip(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "퍼블릭 IP",
+            Language::English => "Public IP",
+        }
+    }
+
+    pub fn md_security_groups(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "보안 그룹",
+            Language::English => "Security Groups",
+        }
+    }
+
+    pub fn md_ebs_optimized(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "EBS 최적화",
+            Language::English => "EBS Optimized",
+        }
+    }
+
+    pub fn md_monitoring(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "모니터링",
+            Language::English => "Monitoring",
+        }
+    }
+
+    pub fn md_iam_role(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "IAM 역할",
+            Language::English => "IAM Role",
+        }
+    }
+
+    pub fn md_launch_time(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "시작 시간",
+            Language::English => "Launch Time",
+        }
+    }
+
+    pub fn md_storage(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "스토리지",
+            Language::English => "Storage",
+        }
+    }
+
+    pub fn md_device(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "디바이스",
+            Language::English => "Device",
+        }
+    }
+
+    pub fn md_size(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "크기",
+            Language::English => "Size",
+        }
+    }
+
+    pub fn md_encrypted(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "암호화",
+            Language::English => "Encrypted",
+        }
+    }
+
+    pub fn md_delete_on_termination(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "종료 시 삭제",
+            Language::English => "Delete on Termination",
+        }
+    }
+
+    pub fn md_user_data(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "사용자 데이터",
+            Language::English => "User Data",
+        }
+    }
+
+    // ECR markdown labels
+    pub fn md_ecr_repository(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "ECR 레포지토리",
+            Language::English => "ECR Repository",
+        }
+    }
+
+    pub fn md_tag_mutability(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "태그 변경 가능",
+            Language::English => "Tag Mutability",
+        }
+    }
+
+    pub fn md_encryption(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "암호화",
+            Language::English => "Encryption",
+        }
+    }
+
+    pub fn md_image_count(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "이미지 수",
+            Language::English => "Image Count",
+        }
+    }
+
+    pub fn md_created_at(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "생성일",
+            Language::English => "Created At",
+        }
+    }
+
+    // Load Balancer extra labels
+    pub fn md_scheme(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "스키마",
+            Language::English => "Scheme",
+        }
+    }
+
+    pub fn md_target_type(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "대상 유형",
+            Language::English => "Target Type",
+        }
+    }
+
+    pub fn md_health_check(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "헬스 체크",
+            Language::English => "Health Check",
+        }
+    }
+
+    pub fn md_threshold(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "임계값",
+            Language::English => "Threshold",
+        }
+    }
+
+    pub fn md_healthy(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "정상",
+            Language::English => "Healthy",
+        }
+    }
+
+    pub fn md_unhealthy(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "비정상",
+            Language::English => "Unhealthy",
+        }
+    }
+
+    pub fn md_targets(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "대상:",
+            Language::English => "Targets:",
         }
     }
 }
