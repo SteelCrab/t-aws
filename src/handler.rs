@@ -208,20 +208,24 @@ pub fn process_loading(app: &mut App) {
             }
             finish_loading(app);
         }
+        LoadingTask::RefreshAsg => {
+            app.auto_scaling_groups = aws_cli::list_auto_scaling_groups();
+            app.message = app.i18n.refresh_complete().to_string();
+            finish_loading(app);
+        }
+        LoadingTask::LoadAsg => {
+            app.auto_scaling_groups = aws_cli::list_auto_scaling_groups();
+            app.selected_index = 0;
+            app.screen = Screen::AsgSelect;
+            finish_loading(app);
+        }
         LoadingTask::LoadAsgDetail(name) => {
             if let Some(detail) = aws_cli::get_asg_detail(&name) {
-                // For preview or just checking detail
                 app.preview_content = detail.to_markdown();
                 app.preview_filename = format!("{}.md", detail.name);
                 app.asg_detail = Some(detail);
                 app.screen = Screen::Preview;
             }
-            finish_loading(app);
-        }
-        LoadingTask::RefreshAsg | LoadingTask::LoadAsg => {
-            app.auto_scaling_groups = aws_cli::list_auto_scaling_groups();
-            app.selected_index = 0;
-            app.screen = Screen::AsgSelect;
             finish_loading(app);
         }
         LoadingTask::LoadBlueprintResources(current_index) => {
@@ -322,7 +326,19 @@ fn process_blueprint_resources(app: &mut App, current_index: usize) {
             .unwrap_or_else(|| format!("## ECR: {} (Query Failed)\n", resource.resource_name)),
         ResourceType::Asg => aws_cli::get_asg_detail(&resource.resource_id)
             .map(|d| d.to_markdown())
+<<<<<<< HEAD
             .unwrap_or_else(|| format!("## ASG: {} (Query Failed)\n", resource.resource_name)),
+=======
+            .unwrap_or_else(|| format!("## ECR: {} (조회 실패)\n", resource.resource_name)),
+        ResourceType::Asg => aws_cli::get_asg_detail(&resource.resource_id)
+            .map(|d| d.to_markdown())
+            .unwrap_or_else(|| {
+                format!(
+                    "## Auto Scaling Group: {} (조회 실패)\n",
+                    resource.resource_name
+                )
+            }),
+>>>>>>> 2292d9a (feat(asg): add Auto Scaling Group support)
     };
 
     app.blueprint_markdown_parts.push(markdown);
@@ -907,6 +923,33 @@ fn handle_ecr_select(app: &mut App, key: KeyEvent) {
     }
 }
 
+fn handle_asg_select(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.selected_index > 0 {
+                app.selected_index -= 1;
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.selected_index < app.auto_scaling_groups.len().saturating_sub(1) {
+                app.selected_index += 1;
+            }
+        }
+        KeyCode::Enter => {
+            if app.selected_index < app.auto_scaling_groups.len() {
+                let name = app.auto_scaling_groups[app.selected_index].id.clone();
+                start_loading(app, LoadingTask::LoadAsgDetail(name));
+            }
+        }
+        KeyCode::Char('r') => {
+            start_loading(app, LoadingTask::RefreshAsg);
+        }
+        KeyCode::Esc => app.screen = Screen::ServiceSelect,
+        KeyCode::Char('q') => app.running = false,
+        _ => {}
+    }
+}
+
 fn handle_preview(app: &mut App, key: KeyEvent) {
     let content_lines = app.preview_content.lines().count() as u16;
 
@@ -964,6 +1007,7 @@ fn handle_preview(app: &mut App, key: KeyEvent) {
                 app.sg_detail = None;
                 app.lb_detail = None;
                 app.ecr_detail = None;
+                app.asg_detail = None;
                 app.preview_scroll = 0;
                 app.screen = Screen::BlueprintDetail;
             }
@@ -977,6 +1021,7 @@ fn handle_preview(app: &mut App, key: KeyEvent) {
                 app.sg_detail = None;
                 app.lb_detail = None;
                 app.ecr_detail = None;
+                app.asg_detail = None;
                 app.screen = Screen::BlueprintDetail;
             } else if app.ec2_detail.is_some() {
                 app.ec2_detail = None;
@@ -993,6 +1038,9 @@ fn handle_preview(app: &mut App, key: KeyEvent) {
             } else if app.ecr_detail.is_some() {
                 app.ecr_detail = None;
                 app.screen = Screen::EcrSelect;
+            } else if app.asg_detail.is_some() {
+                app.asg_detail = None;
+                app.screen = Screen::AsgSelect;
             } else {
                 app.screen = Screen::ServiceSelect;
             }

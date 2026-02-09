@@ -1,3 +1,4 @@
+mod asg;
 mod common;
 mod ec2;
 mod ecr;
@@ -36,3 +37,7 @@ pub use load_balancer::{
 
 // Re-export ECR types and functions
 pub use ecr::{EcrDetail, get_ecr_detail, list_ecr_repositories};
+
+// Re-export ASG types and functions
+#[allow(unused_imports)]
+pub use asg::{AsgDetail, get_asg_detail, list_auto_scaling_groups};

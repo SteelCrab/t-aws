@@ -129,7 +129,8 @@ fn draw_footer(frame: &mut Frame, app: &App, area: Rect) {
         | Screen::VpcSelect
         | Screen::SecurityGroupSelect
         | Screen::LoadBalancerSelect
-        | Screen::EcrSelect => format!(
+        | Screen::EcrSelect
+        | Screen::AsgSelect => format!(
             "↑↓/jk: {} | Enter: {} | r: {} | Esc: {} | q: {}",
             i.move_cursor(),
             i.select(),
@@ -201,6 +202,7 @@ fn draw_main(frame: &mut Frame, app: &App, area: Rect) {
         Screen::Preview => draw_preview(frame, app, area),
         Screen::LoadBalancerSelect => draw_load_balancer_select(frame, app, area),
         Screen::EcrSelect => draw_ecr_select(frame, app, area),
+        Screen::AsgSelect => draw_asg_select(frame, app, area),
         Screen::Settings => draw_settings(frame, app, area),
     }
 }
@@ -238,6 +240,9 @@ fn draw_loading(frame: &mut Frame, app: &App, area: Rect) {
         LoadingTask::RefreshEcr => i.refreshing_ecr_list(),
         LoadingTask::LoadEcr => i.loading_ecr_list(),
         LoadingTask::LoadEcrDetail(_) => i.loading_ecr_detail(),
+        LoadingTask::RefreshAsg => i.loading_asg_list(),
+        LoadingTask::LoadAsg => i.loading_asg_list(),
+        LoadingTask::LoadAsgDetail(_) => i.loading_asg_detail(),
         LoadingTask::LoadBlueprintResources(_) => i.loading_blueprint_resources(),
     };
 
@@ -829,6 +834,7 @@ fn draw_blueprint_detail(frame: &mut Frame, app: &App, area: Rect) {
                 ResourceType::SecurityGroup => Color::Magenta,
                 ResourceType::LoadBalancer => Color::Blue,
                 ResourceType::Ecr => Color::LightRed,
+                ResourceType::Asg => Color::LightCyan,
             };
 
             ListItem::new(Line::from(vec![
@@ -979,6 +985,70 @@ fn draw_settings(frame: &mut Frame, app: &App, area: Rect) {
             Style::default().fg(Color::DarkGray),
         ),
     ]))];
+
+    let list = List::new(items).block(Block::default().title(title).borders(Borders::ALL));
+    frame.render_widget(list, area);
+}
+
+fn draw_asg_select(frame: &mut Frame, app: &App, area: Rect) {
+    let lang = app.settings.language;
+    let region = &REGIONS[app.selected_region];
+    let title = format!(
+        " {} [{} - {}] ",
+        app.i18n.auto_scaling_group(),
+        region.code,
+        region.name(lang)
+    );
+
+    if app.auto_scaling_groups.is_empty() {
+        let para = Paragraph::new(app.i18n.no_asgs())
+            .block(Block::default().title(title).borders(Borders::ALL));
+        frame.render_widget(para, area);
+        return;
+    }
+
+    let items: Vec<ListItem> = app
+        .auto_scaling_groups
+        .iter()
+        .enumerate()
+        .map(|(i, asg)| {
+            let is_in_blueprint = app.current_blueprint.as_ref().is_some_and(|bp| {
+                bp.resources
+                    .iter()
+                    .any(|r| r.resource_type == ResourceType::Asg && r.resource_id == asg.id)
+            });
+
+            let style = if i == app.selected_index {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else if is_in_blueprint {
+                Style::default().fg(Color::DarkGray)
+            } else {
+                Style::default()
+            };
+            let prefix = if i == app.selected_index {
+                "▶ "
+            } else if is_in_blueprint {
+                "✓ "
+            } else {
+                "  "
+            };
+
+            let _state_style = if is_in_blueprint {
+                Style::default().fg(Color::DarkGray)
+            } else {
+                Style::default().fg(Color::LightCyan)
+            };
+
+            let content = format!("{} [{}]", asg.display(), asg.state);
+
+            ListItem::new(Line::from(vec![
+                Span::styled(prefix, style),
+                Span::styled(content, style),
+            ]))
+        })
+        .collect();
 
     let list = List::new(items).block(Block::default().title(title).borders(Borders::ALL));
     frame.render_widget(list, area);

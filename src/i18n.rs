@@ -464,6 +464,31 @@ impl I18n {
         }
     }
 
+    pub fn loading_asg_list(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "Auto Scaling Group 목록 조회 중",
+            Language::English => "Loading Auto Scaling Groups",
+        }
+    }
+
+    pub fn loading_asg_detail(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "Auto Scaling Group 상세 정보 조회 중",
+            Language::English => "Loading Auto Scaling Group details",
+        }
+    }
+
+    pub fn no_asgs(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "Auto Scaling Group이 없습니다.",
+            Language::English => "No Auto Scaling Groups found.",
+        }
+    }
+
+    pub fn auto_scaling_group(&self) -> &'static str {
+        "Auto Scaling Group"
+    }
+
     pub fn loading_blueprint_resources(&self) -> &'static str {
         match self.lang {
             Language::Korean => "블루프린트 리소스 조회 중",

@@ -10,6 +10,7 @@ pub enum ResourceType {
     SecurityGroup,
     LoadBalancer,
     Ecr,
+    Asg,
 }
 
 impl ResourceType {
@@ -20,6 +21,7 @@ impl ResourceType {
             ResourceType::SecurityGroup => "Security Group",
             ResourceType::LoadBalancer => "Load Balancer",
             ResourceType::Ecr => "ECR",
+            ResourceType::Asg => "Auto Scaling Group",
         }
     }
 }
