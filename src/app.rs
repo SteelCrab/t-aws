@@ -1,4 +1,4 @@
-use crate::aws_cli::{self, AwsResource, Ec2Detail, EcrDetail};
+use crate::aws_cli::{self, AsgDetail, AwsResource, Ec2Detail, EcrDetail};
 use crate::blueprint::{
     Blueprint, BlueprintResource, BlueprintStore, ResourceType, load_blueprints, save_blueprints,
 };
@@ -19,6 +19,7 @@ pub enum Screen {
     SecurityGroupSelect,
     LoadBalancerSelect,
     EcrSelect,
+    AsgSelect,
     Preview,
     Settings,
 }
@@ -32,16 +33,19 @@ pub enum LoadingTask {
     RefreshSecurityGroup,
     RefreshLoadBalancer,
     RefreshEcr,
+    RefreshAsg,
     LoadEc2,
     LoadVpc,
     LoadSecurityGroup,
     LoadLoadBalancer,
     LoadEcr,
+    LoadAsg,
     LoadEc2Detail(String),
     LoadVpcDetail(String, u8), // (vpc_id, step: 0-6)
     LoadSecurityGroupDetail(String),
     LoadLoadBalancerDetail(String),
     LoadEcrDetail(String),
+    LoadAsgDetail(String),
     LoadBlueprintResources(usize), // (current_resource_index)
 }
 
@@ -141,7 +145,14 @@ pub const REGIONS: &[Region] = &[
 ];
 
 // Service names (excluding exit which is handled separately)
-pub const SERVICE_KEYS: &[&str] = &["EC2", "Network", "Security Group", "Load Balancer", "ECR"];
+pub const SERVICE_KEYS: &[&str] = &[
+    "EC2",
+    "Network",
+    "Security Group",
+    "Load Balancer",
+    "ECR",
+    "ASG",
+];
 
 pub struct App {
     pub screen: Screen,
@@ -168,6 +179,7 @@ pub struct App {
     pub security_groups: Vec<AwsResource>,
     pub load_balancers: Vec<AwsResource>,
     pub ecr_repositories: Vec<AwsResource>,
+    pub auto_scaling_groups: Vec<AwsResource>,
 
     // Selected EC2 Detail
     pub ec2_detail: Option<Ec2Detail>,
@@ -179,6 +191,8 @@ pub struct App {
     pub lb_detail: Option<aws_cli::LoadBalancerDetail>,
     // Selected ECR Detail
     pub ecr_detail: Option<EcrDetail>,
+    // Selected ASG Detail
+    pub asg_detail: Option<AsgDetail>,
 
     // Preview
     pub preview_content: String,
@@ -224,11 +238,13 @@ impl App {
             security_groups: Vec::new(),
             load_balancers: Vec::new(),
             ecr_repositories: Vec::new(),
+            auto_scaling_groups: Vec::new(),
             ec2_detail: None,
             network_detail: None,
             sg_detail: None,
             lb_detail: None,
             ecr_detail: None,
+            asg_detail: None,
 
             preview_content: String::new(),
             preview_filename: String::new(),
@@ -389,6 +405,8 @@ impl App {
             Some(ResourceType::LoadBalancer)
         } else if self.ecr_detail.is_some() {
             Some(ResourceType::Ecr)
+        } else if self.asg_detail.is_some() {
+            Some(ResourceType::Asg)
         } else {
             None
         }
@@ -403,8 +421,10 @@ impl App {
             Some((detail.id.clone(), detail.name.clone()))
         } else if let Some(ref detail) = self.lb_detail {
             Some((detail.arn.clone(), detail.name.clone()))
+        } else if let Some(ref detail) = self.ecr_detail {
+            Some((detail.name.clone(), detail.name.clone()))
         } else {
-            self.ecr_detail
+            self.asg_detail
                 .as_ref()
                 .map(|detail| (detail.name.clone(), detail.name.clone()))
         }
