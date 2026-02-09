@@ -17,6 +17,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         Screen::SecurityGroupSelect => handle_security_group_select(app, key),
         Screen::LoadBalancerSelect => handle_load_balancer_select(app, key),
         Screen::EcrSelect => handle_ecr_select(app, key),
+        Screen::AsgSelect => handle_asg_select(app, key),
         Screen::Preview => handle_preview(app, key),
         Screen::Settings => handle_settings(app, key),
     }
@@ -207,6 +208,22 @@ pub fn process_loading(app: &mut App) {
             }
             finish_loading(app);
         }
+        LoadingTask::LoadAsgDetail(name) => {
+            if let Some(detail) = aws_cli::get_asg_detail(&name) {
+                // For preview or just checking detail
+                app.preview_content = detail.to_markdown();
+                app.preview_filename = format!("{}.md", detail.name);
+                app.asg_detail = Some(detail);
+                app.screen = Screen::Preview;
+            }
+            finish_loading(app);
+        }
+        LoadingTask::RefreshAsg | LoadingTask::LoadAsg => {
+            app.auto_scaling_groups = aws_cli::list_auto_scaling_groups();
+            app.selected_index = 0;
+            app.screen = Screen::AsgSelect;
+            finish_loading(app);
+        }
         LoadingTask::LoadBlueprintResources(current_index) => {
             process_blueprint_resources(app, current_index);
         }
@@ -302,7 +319,10 @@ fn process_blueprint_resources(app: &mut App, current_index: usize) {
             }),
         ResourceType::Ecr => aws_cli::get_ecr_detail(&resource.resource_id)
             .map(|d| d.to_markdown(app.settings.language))
-            .unwrap_or_else(|| format!("## ECR: {} ({})\n", resource.resource_name, failed)),
+            .unwrap_or_else(|| format!("## ECR: {} (Query Failed)\n", resource.resource_name)),
+        ResourceType::Asg => aws_cli::get_asg_detail(&resource.resource_id)
+            .map(|d| d.to_markdown())
+            .unwrap_or_else(|| format!("## ASG: {} (Query Failed)\n", resource.resource_name)),
     };
 
     app.blueprint_markdown_parts.push(markdown);
@@ -674,7 +694,8 @@ fn handle_service_select(app: &mut App, key: KeyEvent) {
             2 => start_loading(app, LoadingTask::LoadSecurityGroup),
             3 => start_loading(app, LoadingTask::LoadLoadBalancer),
             4 => start_loading(app, LoadingTask::LoadEcr),
-            5 => {
+            5 => start_loading(app, LoadingTask::LoadAsg),
+            6 => {
                 // Exit
                 if app.blueprint_mode {
                     app.screen = Screen::BlueprintDetail;
@@ -950,5 +971,60 @@ fn handle_settings(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Char('q') => app.running = false,
         _ => {}
+    }
+}
+
+fn handle_asg_select(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.selected_index > 0 {
+                app.selected_index -= 1;
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.selected_index < app.auto_scaling_groups.len().saturating_sub(1) {
+                app.selected_index += 1;
+            }
+        }
+        KeyCode::Enter => {
+            if app.selected_index < app.auto_scaling_groups.len() {
+                let asg = &app.auto_scaling_groups[app.selected_index];
+                if app.blueprint_mode {
+                    add_resource_to_blueprint(
+                        app,
+                        ResourceType::Asg,
+                        asg.id.clone(),
+                        asg.name.clone(),
+                    );
+                } else {
+                    start_loading(app, LoadingTask::LoadAsgDetail(asg.name.clone()));
+                }
+            }
+        }
+        KeyCode::Char('r') => {
+            start_loading(app, LoadingTask::RefreshAsg);
+        }
+        KeyCode::Esc | KeyCode::Char('q') => {
+            app.screen = Screen::ServiceSelect;
+        }
+        _ => {}
+    }
+}
+
+fn add_resource_to_blueprint(
+    app: &mut App,
+    resource_type: ResourceType,
+    resource_id: String,
+    resource_name: String,
+) {
+    if app.current_blueprint.is_some() {
+        let region = app.get_current_region();
+        let resource = BlueprintResource {
+            resource_type,
+            region,
+            resource_id,
+            resource_name,
+        };
+        app.add_resource_to_current_blueprint(resource);
     }
 }
