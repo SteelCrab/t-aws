@@ -17,6 +17,8 @@ use crossterm::{
 use ratatui::prelude::*;
 use std::io;
 use std::time::Duration;
+use tracing_appender;
+use tracing_subscriber;
 
 use app::App;
 
@@ -24,6 +26,16 @@ fn main() -> io::Result<()> {
     if cli::run().is_some() {
         return Ok(());
     }
+
+    // Setup logging
+    let file_appender = tracing_appender::rolling::daily(".", "emd.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    tracing_subscriber::fmt()
+        .with_writer(non_blocking)
+        .with_ansi(false)
+        .init();
+
+    tracing::info!("Application started");
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -45,6 +57,7 @@ fn main() -> io::Result<()> {
     terminal.show_cursor()?;
 
     if let Err(err) = res {
+        tracing::error!("Application error: {}", err);
         eprintln!("Error: {}", err);
     }
 
