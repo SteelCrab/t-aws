@@ -51,7 +51,7 @@ impl Ec2Detail {
             format!("{} - {}", self.name, self.instance_id)
         };
         let mut lines = vec![
-            format!("## EC2 Instance ({})\n", display_name),
+            format!("## {} ({})\n", i18n.md_ec2_instance(), display_name),
             format!("| {} | {} |", i18n.item(), i18n.value()),
             "|:---|:---|".to_string(),
             format!("| {} | {} |", i18n.md_name(), display_name),
@@ -65,21 +65,22 @@ impl Ec2Detail {
         }
 
         lines.push(format!("| AMI | {} |", self.ami));
-        lines.push(format!("| Instance Type | {} |", self.instance_type));
-        lines.push(format!("| Platform | {} |", self.platform));
-        lines.push(format!("| Architecture | {} |", self.architecture));
-        lines.push(format!("| Key Pair | {} |", self.key_pair));
+        lines.push(format!("| {} | {} |", i18n.md_instance_type(), self.instance_type));
+        lines.push(format!("| {} | {} |", i18n.md_platform(), self.platform));
+        lines.push(format!("| {} | {} |", i18n.md_architecture(), self.architecture));
+        lines.push(format!("| {} | {} |", i18n.md_key_pair(), self.key_pair));
         lines.push(format!("| VPC | {} |", self.vpc));
         lines.push(format!("| {} | {} |", i18n.md_subnet(), self.subnet));
-        lines.push(format!("| Availability Zone | {} |", self.az));
-        lines.push(format!("| Private IP | {} |", self.private_ip));
+        lines.push(format!("| {} | {} |", i18n.md_availability_zone(), self.az));
+        lines.push(format!("| {} | {} |", i18n.md_private_ip(), self.private_ip));
 
         if self.public_ip != "-" && !self.public_ip.is_empty() {
-            lines.push(format!("| Public IP | {} |", self.public_ip));
+            lines.push(format!("| {} | {} |", i18n.md_public_ip(), self.public_ip));
         }
 
         lines.push(format!(
-            "| Security Groups | {} |",
+            "| {} | {} |",
+            i18n.md_security_groups(),
             self.security_groups.join(", ")
         ));
 
@@ -88,25 +89,34 @@ impl Ec2Detail {
         } else {
             i18n.md_disabled()
         };
-        lines.push(format!("| EBS Optimized | {} |", ebs_str));
-        lines.push(format!("| Monitoring | {} |", self.monitoring));
+        lines.push(format!("| {} | {} |", i18n.md_ebs_optimized(), ebs_str));
+        let monitoring_str = if self.monitoring == "Enabled" {
+            i18n.md_enabled()
+        } else {
+            i18n.md_disabled()
+        };
+        lines.push(format!("| {} | {} |", i18n.md_monitoring(), monitoring_str));
 
         if let Some(ref role) = self.iam_role {
-            lines.push(format!("| IAM Role | {} |", role));
+            lines.push(format!("| {} | {} |", i18n.md_iam_role(), role));
         }
 
         if !self.launch_time.is_empty() {
-            lines.push(format!("| Launch Time | {} |", self.launch_time));
+            lines.push(format!("| {} | {} |", i18n.md_launch_time(), self.launch_time));
         }
 
         // Storage section
         if !self.volumes.is_empty() {
             lines.push(String::new());
-            lines.push("### Storage\n".to_string());
-            lines.push(
-                "| Device | Volume ID | Size | Type | IOPS | Encrypted | Delete on Termination |"
-                    .to_string(),
-            );
+            lines.push(format!("### {}\n", i18n.md_storage()));
+            lines.push(format!(
+                "| {} | Volume ID | {} | {} | IOPS | {} | {} |",
+                i18n.md_device(),
+                i18n.md_size(),
+                i18n.md_type(),
+                i18n.md_encrypted(),
+                i18n.md_delete_on_termination()
+            ));
             lines.push("|:---|:---|---:|:---|---:|:---:|:---:|".to_string());
 
             for vol in &self.volumes {
@@ -136,7 +146,7 @@ impl Ec2Detail {
         // User Data section
         if let Some(ref user_data) = self.user_data {
             lines.push(String::new());
-            lines.push("### User Data\n".to_string());
+            lines.push(format!("### {}\n", i18n.md_user_data()));
             lines.push("```bash".to_string());
             lines.push(user_data.clone());
             lines.push("```".to_string());

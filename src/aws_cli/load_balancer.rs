@@ -177,7 +177,7 @@ impl LoadBalancerDetail {
             format!("| {} | {} |", i18n.md_state(), self.state),
             format!("| {} | {} |", i18n.md_dns_name(), self.dns_name),
             format!("| {} | {} |", i18n.md_type(), self.lb_type),
-            format!("| Scheme | {} |", self.scheme),
+            format!("| {} | {} |", i18n.md_scheme(), self.scheme),
             format!(
                 "| {} | {} |",
                 i18n.md_ip_address_type(),
@@ -188,14 +188,16 @@ impl LoadBalancerDetail {
 
         if !self.availability_zones.is_empty() {
             lines.push(format!(
-                "| Availability Zones | {} |",
+                "| {} | {} |",
+                i18n.md_availability_zones(),
                 self.availability_zones.join(", ")
             ));
         }
 
         if !self.security_groups.is_empty() {
             lines.push(format!(
-                "| Security Groups | {} |",
+                "| {} | {} |",
+                i18n.md_security_groups(),
                 self.security_groups.join(", ")
             ));
         }
@@ -226,18 +228,24 @@ impl LoadBalancerDetail {
                 lines.push("|:---|:---|".to_string());
                 lines.push(format!("| {} | {} |", i18n.md_protocol(), tg.protocol));
                 lines.push(format!("| {} | {} |", i18n.md_port(), tg.port));
-                lines.push(format!("| Target Type | {} |", tg.target_type));
+                lines.push(format!("| {} | {} |", i18n.md_target_type(), tg.target_type));
                 lines.push(format!(
-                    "| Health Check | {} {} |",
-                    tg.health_check_protocol, tg.health_check_path
+                    "| {} | {} {} |",
+                    i18n.md_health_check(),
+                    tg.health_check_protocol,
+                    tg.health_check_path
                 ));
                 lines.push(format!(
-                    "| Threshold | Healthy: {}, Unhealthy: {} |",
-                    tg.healthy_threshold, tg.unhealthy_threshold
+                    "| {} | {}: {}, {}: {} |",
+                    i18n.md_threshold(),
+                    i18n.md_healthy(),
+                    tg.healthy_threshold,
+                    i18n.md_unhealthy(),
+                    tg.unhealthy_threshold
                 ));
 
                 if !tg.targets.is_empty() {
-                    lines.push("\n**Targets:**".to_string());
+                    lines.push(format!("\n**{}**", i18n.md_targets()));
                     lines.push(format!(
                         "| Target ID | {} | {} |",
                         i18n.md_port(),

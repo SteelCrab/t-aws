@@ -66,15 +66,15 @@ impl EcrDetail {
         };
 
         let lines = vec![
-            format!("## ECR Repository ({})\n", self.name),
+            format!("## {} ({})\n", i18n.md_ecr_repository(), self.name),
             format!("| {} | {} |", i18n.item(), i18n.value()),
             "|:---|:---|".to_string(),
             format!("| {} | {} |", i18n.md_name(), self.name),
             format!("| URI | {} |", self.uri),
-            format!("| Tag Mutability | {} |", self.tag_mutability),
-            format!("| Encryption | {} |", encryption_display),
-            format!("| Image Count | {} |", self.image_count),
-            format!("| Created At | {} |", self.created_at),
+            format!("| {} | {} |", i18n.md_tag_mutability(), self.tag_mutability),
+            format!("| {} | {} |", i18n.md_encryption(), encryption_display),
+            format!("| {} | {} |", i18n.md_image_count(), self.image_count),
+            format!("| {} | {} |", i18n.md_created_at(), self.created_at),
         ];
 
         lines.join("\n") + "\n"
