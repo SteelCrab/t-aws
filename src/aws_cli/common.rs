@@ -201,3 +201,29 @@ pub fn parse_resources_from_json(json: &str, prefix: &str) -> Vec<AwsResource> {
     }
     resources
 }
+
+use std::sync::OnceLock;
+use tokio::runtime::Runtime;
+
+static RUNTIME: OnceLock<Runtime> = OnceLock::new();
+
+pub fn get_runtime() -> &'static Runtime {
+    RUNTIME.get_or_init(|| Runtime::new().expect("Failed to create Tokio runtime"))
+}
+
+/// Get AWS SDK config with profile-based credentials and region
+pub async fn get_sdk_config() -> aws_config::SdkConfig {
+    let profile_name = std::env::var("AWS_PROFILE").unwrap_or_else(|_| "default".to_string());
+
+    let mut config_loader =
+        aws_config::defaults(aws_config::BehaviorVersion::latest()).profile_name(&profile_name);
+
+    // Get region from REGION mutex if set
+    if let Ok(r) = REGION.lock() {
+        if let Some(ref region_str) = *r {
+            config_loader = config_loader.region(aws_config::Region::new(region_str.clone()));
+        }
+    }
+
+    config_loader.load().await
+}
