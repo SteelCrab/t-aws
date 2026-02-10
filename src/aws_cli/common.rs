@@ -167,37 +167,3 @@ pub fn extract_tags(json: &str) -> Vec<(String, String)> {
     }
     tags
 }
-
-pub fn parse_resources_from_json(json: &str, prefix: &str) -> Vec<AwsResource> {
-    let mut resources = Vec::new();
-
-    let mut search_start = 0;
-    while let Some(pos) = json[search_start..].find(prefix) {
-        let start = search_start + pos;
-        if let Some(end) = json[start..].find('"') {
-            let id = &json[start..start + end];
-            if id.starts_with(prefix) && !id.contains(' ') {
-                let section_end = json[start..]
-                    .find(']')
-                    .map(|p| start + p)
-                    .unwrap_or(json.len());
-                let tag_start = start;
-                let tag_end = section_end;
-                let tags_json = &json[tag_start..tag_end];
-                let name = parse_name_tag(tags_json);
-
-                resources.push(AwsResource {
-                    name,
-                    id: id.to_string(),
-                    state: String::new(),
-                    az: String::new(),
-                    cidr: String::new(),
-                });
-            }
-            search_start = start + end;
-        } else {
-            break;
-        }
-    }
-    resources
-}

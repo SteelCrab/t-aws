@@ -146,7 +146,10 @@ pub fn list_security_groups() -> Vec<AwsResource> {
 
     let response: SecurityGroupsResponse = match serde_json::from_str(&output) {
         Ok(r) => r,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            eprintln!("Failed to parse Security Groups JSON: {}", e);
+            return Vec::new();
+        }
     };
 
     response
@@ -160,8 +163,9 @@ pub fn list_security_groups() -> Vec<AwsResource> {
                 .map(|t| t.value.clone())
                 .unwrap_or_else(|| sg.group_name.clone());
 
+            // Format: Name || Group ID || VPC ID
             AwsResource {
-                name: format!("{} || {} || {}", name, sg.group_name, sg.group_id),
+                name: format!("{} || {} || {}", name, sg.group_id, sg.vpc_id),
                 id: sg.group_id,
                 state: sg.vpc_id,
                 az: String::new(),

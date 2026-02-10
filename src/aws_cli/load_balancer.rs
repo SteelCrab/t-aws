@@ -278,23 +278,27 @@ pub fn list_load_balancers() -> Vec<AwsResource> {
 
     let response: LoadBalancersResponse = match serde_json::from_str(&output) {
         Ok(r) => r,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            eprintln!("Failed to parse Load Balancers JSON: {}", e);
+            return Vec::new();
+        }
     };
 
     response
         .load_balancers
         .into_iter()
         .map(|lb| {
-            let scheme_text = match lb.scheme.as_str() {
-                "internet-facing" => "인터넷 연결",
-                "internal" => "내부",
-                _ => &lb.scheme,
-            };
+            let state_code = lb
+                .state
+                .as_ref()
+                .map(|s| s.code.clone())
+                .unwrap_or_else(|| "unknown".to_string());
 
+            // Format: Name || DNS Name || State
             AwsResource {
                 name: format!(
                     "{} || {} || {}",
-                    lb.load_balancer_name, scheme_text, lb.lb_type
+                    lb.load_balancer_name, lb.dns_name, state_code
                 ),
                 id: lb.load_balancer_arn,
                 state: lb.lb_type,

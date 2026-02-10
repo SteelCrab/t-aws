@@ -89,7 +89,10 @@ pub fn list_ecr_repositories() -> Vec<AwsResource> {
 
     let response: EcrRepositoriesResponse = match serde_json::from_str(&output) {
         Ok(r) => r,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            eprintln!("Failed to parse ECR repositories JSON: {}", e);
+            return Vec::new();
+        }
     };
 
     response
@@ -102,10 +105,11 @@ pub fn list_ecr_repositories() -> Vec<AwsResource> {
                 "Mutable"
             };
 
+            // Format: Name || URI || Mutability
             AwsResource {
                 name: format!(
                     "{} || {} || {}",
-                    repo.repository_name, mutability, repo.repository_name
+                    repo.repository_name, repo.repository_uri, mutability
                 ),
                 id: repo.repository_name,
                 state: repo.image_tag_mutability,

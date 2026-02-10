@@ -501,6 +501,7 @@ impl NetworkDetail {
 }
 
 // Public functions
+// Public functions
 pub fn list_vpcs() -> Vec<AwsResource> {
     let output = match run_aws_cli(&["ec2", "describe-vpcs", "--output", "json"]) {
         Some(o) => o,
@@ -529,7 +530,10 @@ fn parse_vpcs(json: &str) -> Vec<AwsResource> {
 
     let response: VpcsResponse = match serde_json::from_str(json) {
         Ok(r) => r,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            eprintln!("Failed to parse VPCs JSON: {}", e);
+            return Vec::new();
+        }
     };
 
     response
@@ -562,7 +566,10 @@ pub fn list_subnets(vpc_id: &str) -> Vec<AwsResource> {
 
     let response: SubnetResponse = match serde_json::from_str(&output) {
         Ok(r) => r,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            eprintln!("Failed to parse Subnets JSON: {}", e);
+            return Vec::new();
+        }
     };
 
     response
@@ -588,6 +595,7 @@ pub fn list_subnets(vpc_id: &str) -> Vec<AwsResource> {
         .collect()
 }
 
+// Public functions
 pub fn list_internet_gateways(vpc_id: &str) -> Vec<AwsResource> {
     let filter = format!("Name=attachment.vpc-id,Values={}", vpc_id);
     let output = match run_aws_cli(&[
@@ -674,7 +682,10 @@ pub fn list_nat_gateways(vpc_id: &str) -> Vec<NatDetail> {
 
     let response: NatGatewayResponse = match serde_json::from_str(&output) {
         Ok(r) => r,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            eprintln!("Failed to parse NAT Gateways JSON: {}", e);
+            return Vec::new();
+        }
     };
 
     response
