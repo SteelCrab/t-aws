@@ -25,7 +25,14 @@ pub struct InlinePolicy {
 
 pub fn get_iam_role_detail(role_name: &str) -> Option<IamRoleDetail> {
     // 역할 기본 정보
-    let output = run_aws_cli(&["iam", "get-role", "--role-name", role_name, "--output", "json"])?;
+    let output = run_aws_cli(&[
+        "iam",
+        "get-role",
+        "--role-name",
+        role_name,
+        "--output",
+        "json",
+    ])?;
 
     let name = extract_json_value(&output, "RoleName").unwrap_or_default();
     let arn = extract_json_value(&output, "Arn").unwrap_or_default();
