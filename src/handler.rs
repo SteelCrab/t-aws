@@ -130,6 +130,15 @@ pub fn process_loading(app: &mut App) {
             app.screen = Screen::Ec2Select;
             finish_loading(app);
         }
+        LoadingTask::LoadEc2Detail(id) => {
+            if let Some(detail) = aws_cli::get_instance_detail(&id) {
+                app.preview_content = detail.to_markdown(app.settings.language);
+                app.preview_filename = format!("{}.md", detail.name);
+                app.ec2_detail = Some(detail);
+                app.screen = Screen::Preview;
+            }
+            finish_loading(app);
+        }
         LoadingTask::LoadVpc => {
             app.vpcs = aws_cli::list_vpcs();
             app.selected_index = 0;
@@ -151,6 +160,15 @@ pub fn process_loading(app: &mut App) {
             app.screen = Screen::SecurityGroupSelect;
             finish_loading(app);
         }
+        LoadingTask::LoadSecurityGroupDetail(id) => {
+            if let Some(detail) = aws_cli::get_security_group_detail(&id) {
+                app.preview_content = detail.to_markdown(app.settings.language);
+                app.preview_filename = format!("{}.md", detail.name);
+                app.sg_detail = Some(detail);
+                app.screen = Screen::Preview;
+            }
+            finish_loading(app);
+        }
 
         LoadingTask::RefreshLoadBalancer => {
             app.load_balancers = aws_cli::list_load_balancers();
@@ -163,6 +181,15 @@ pub fn process_loading(app: &mut App) {
             app.screen = Screen::LoadBalancerSelect;
             finish_loading(app);
         }
+        LoadingTask::LoadLoadBalancerDetail(id) => {
+            if let Some(detail) = aws_cli::get_load_balancer_detail(&id) {
+                app.preview_content = detail.to_markdown(app.settings.language);
+                app.preview_filename = format!("{}.md", detail.name);
+                app.lb_detail = Some(detail);
+                app.screen = Screen::Preview;
+            }
+            finish_loading(app);
+        }
 
         LoadingTask::RefreshEcr => {
             app.ecr_repositories = aws_cli::list_ecr_repositories();
@@ -173,6 +200,15 @@ pub fn process_loading(app: &mut App) {
             app.ecr_repositories = aws_cli::list_ecr_repositories();
             app.selected_index = 0;
             app.screen = Screen::EcrSelect;
+            finish_loading(app);
+        }
+        LoadingTask::LoadEcrDetail(id) => {
+            if let Some(detail) = aws_cli::get_ecr_detail(&id) {
+                app.preview_content = detail.to_markdown(app.settings.language);
+                app.preview_filename = format!("{}.md", detail.name);
+                app.ecr_detail = Some(detail);
+                app.screen = Screen::Preview;
+            }
             finish_loading(app);
         }
 
@@ -291,13 +327,13 @@ fn process_blueprint_resources(app: &mut App, current_index: usize) {
             }),
         ResourceType::Ecr => aws_cli::get_ecr_detail(&resource.resource_id)
             .map(|d| d.to_markdown(app.settings.language))
-            .unwrap_or_else(|| format!("## ECR: {} (Query Failed)\n", resource.resource_name)),
+            .unwrap_or_else(|| format!("## ECR: {} ({})\n", resource.resource_name, failed)),
         ResourceType::Asg => aws_cli::get_asg_detail(&resource.resource_id)
             .map(|d| d.to_markdown())
             .unwrap_or_else(|| {
                 format!(
-                    "## Auto Scaling Group: {} (Query Failed)\n",
-                    resource.resource_name
+                    "## Auto Scaling Group: {} ({})\n",
+                    resource.resource_name, failed
                 )
             }),
     };
@@ -709,12 +745,16 @@ fn handle_ec2_select(app: &mut App, key: KeyEvent) {
         KeyCode::Enter => {
             if app.selected_index < app.instances.len() {
                 let inst = &app.instances[app.selected_index];
-                add_resource_to_blueprint(
-                    app,
-                    ResourceType::Ec2,
-                    inst.id.clone(),
-                    inst.name.clone(),
-                );
+                if app.blueprint_mode {
+                    add_resource_to_blueprint(
+                        app,
+                        ResourceType::Ec2,
+                        inst.id.clone(),
+                        inst.name.clone(),
+                    );
+                } else {
+                    start_loading(app, LoadingTask::LoadEc2Detail(inst.id.clone()));
+                }
             }
         }
         KeyCode::Char('r') => {
@@ -741,12 +781,16 @@ fn handle_vpc_select(app: &mut App, key: KeyEvent) {
         KeyCode::Enter => {
             if app.selected_index < app.vpcs.len() {
                 let vpc = &app.vpcs[app.selected_index];
-                add_resource_to_blueprint(
-                    app,
-                    ResourceType::Network,
-                    vpc.id.clone(),
-                    vpc.name.clone(),
-                );
+                if app.blueprint_mode {
+                    add_resource_to_blueprint(
+                        app,
+                        ResourceType::Network,
+                        vpc.id.clone(),
+                        vpc.name.clone(),
+                    );
+                } else {
+                    start_loading(app, LoadingTask::LoadVpcDetail(vpc.id.clone(), 0));
+                }
             }
         }
         KeyCode::Char('r') => {
@@ -773,12 +817,16 @@ fn handle_security_group_select(app: &mut App, key: KeyEvent) {
         KeyCode::Enter => {
             if app.selected_index < app.security_groups.len() {
                 let sg = &app.security_groups[app.selected_index];
-                add_resource_to_blueprint(
-                    app,
-                    ResourceType::SecurityGroup,
-                    sg.id.clone(),
-                    sg.name.clone(),
-                );
+                if app.blueprint_mode {
+                    add_resource_to_blueprint(
+                        app,
+                        ResourceType::SecurityGroup,
+                        sg.id.clone(),
+                        sg.name.clone(),
+                    );
+                } else {
+                    start_loading(app, LoadingTask::LoadSecurityGroupDetail(sg.id.clone()));
+                }
             }
         }
         KeyCode::Char('r') => {
@@ -805,12 +853,16 @@ fn handle_load_balancer_select(app: &mut App, key: KeyEvent) {
         KeyCode::Enter => {
             if app.selected_index < app.load_balancers.len() {
                 let lb = &app.load_balancers[app.selected_index];
-                add_resource_to_blueprint(
-                    app,
-                    ResourceType::LoadBalancer,
-                    lb.id.clone(),
-                    lb.name.clone(),
-                );
+                if app.blueprint_mode {
+                    add_resource_to_blueprint(
+                        app,
+                        ResourceType::LoadBalancer,
+                        lb.id.clone(),
+                        lb.name.clone(),
+                    );
+                } else {
+                    start_loading(app, LoadingTask::LoadLoadBalancerDetail(lb.id.clone()));
+                }
             }
         }
         KeyCode::Char('r') => {
@@ -837,12 +889,16 @@ fn handle_ecr_select(app: &mut App, key: KeyEvent) {
         KeyCode::Enter => {
             if app.selected_index < app.ecr_repositories.len() {
                 let repo = &app.ecr_repositories[app.selected_index];
-                add_resource_to_blueprint(
-                    app,
-                    ResourceType::Ecr,
-                    repo.id.clone(),
-                    repo.name.clone(),
-                );
+                if app.blueprint_mode {
+                    add_resource_to_blueprint(
+                        app,
+                        ResourceType::Ecr,
+                        repo.id.clone(),
+                        repo.name.clone(),
+                    );
+                } else {
+                    start_loading(app, LoadingTask::LoadEcrDetail(repo.id.clone()));
+                }
             }
         }
         KeyCode::Char('r') => {
@@ -1011,9 +1067,8 @@ fn handle_asg_select(app: &mut App, key: KeyEvent) {
         KeyCode::Char('r') => {
             start_loading(app, LoadingTask::RefreshAsg);
         }
-        KeyCode::Esc | KeyCode::Char('q') => {
-            app.screen = Screen::ServiceSelect;
-        }
+        KeyCode::Esc => app.screen = Screen::ServiceSelect,
+        KeyCode::Char('q') => app.running = false,
         _ => {}
     }
 }
