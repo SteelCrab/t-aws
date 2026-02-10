@@ -401,24 +401,10 @@ impl I18n {
         }
     }
 
-    pub fn loading_ec2_detail(&self) -> &'static str {
-        match self.lang {
-            Language::Korean => "EC2 상세 정보 조회 중",
-            Language::English => "Loading EC2 details",
-        }
-    }
-
     pub fn loading_vpc_detail(&self) -> &'static str {
         match self.lang {
             Language::Korean => "Network 상세 정보 조회 중",
             Language::English => "Loading Network details",
-        }
-    }
-
-    pub fn loading_sg_detail(&self) -> &'static str {
-        match self.lang {
-            Language::Korean => "Security Group 상세 정보 조회 중",
-            Language::English => "Loading Security Group details",
         }
     }
 
@@ -436,13 +422,6 @@ impl I18n {
         }
     }
 
-    pub fn loading_lb_detail(&self) -> &'static str {
-        match self.lang {
-            Language::Korean => "Load Balancer 상세 정보 조회 중",
-            Language::English => "Loading Load Balancer details",
-        }
-    }
-
     pub fn refreshing_ecr_list(&self) -> &'static str {
         match self.lang {
             Language::Korean => "ECR 목록 새로고침 중",
@@ -454,13 +433,6 @@ impl I18n {
         match self.lang {
             Language::Korean => "ECR 레포지토리 목록 조회 중",
             Language::English => "Loading ECR repositories",
-        }
-    }
-
-    pub fn loading_ecr_detail(&self) -> &'static str {
-        match self.lang {
-            Language::Korean => "ECR 상세 정보 조회 중",
-            Language::English => "Loading ECR details",
         }
     }
 
