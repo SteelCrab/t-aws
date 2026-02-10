@@ -40,11 +40,7 @@ pub enum LoadingTask {
     LoadLoadBalancer,
     LoadEcr,
     LoadAsg,
-    LoadEc2Detail(String),
     LoadVpcDetail(String, u8), // (vpc_id, step: 0-6)
-    LoadSecurityGroupDetail(String),
-    LoadLoadBalancerDetail(String),
-    LoadEcrDetail(String),
     LoadAsgDetail(String),
     LoadBlueprintResources(usize), // (current_resource_index)
 }

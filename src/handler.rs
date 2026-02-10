@@ -136,15 +136,7 @@ pub fn process_loading(app: &mut App) {
             app.screen = Screen::VpcSelect;
             finish_loading(app);
         }
-        LoadingTask::LoadEc2Detail(id) => {
-            if let Some(detail) = aws_cli::get_instance_detail(&id) {
-                app.preview_content = detail.to_markdown(app.settings.language);
-                app.preview_filename = format!("{}.md", detail.name);
-                app.ec2_detail = Some(detail);
-                app.screen = Screen::Preview;
-            }
-            finish_loading(app);
-        }
+
         LoadingTask::LoadVpcDetail(id, step) => {
             process_vpc_detail_step(app, &id, step);
         }
@@ -159,15 +151,7 @@ pub fn process_loading(app: &mut App) {
             app.screen = Screen::SecurityGroupSelect;
             finish_loading(app);
         }
-        LoadingTask::LoadSecurityGroupDetail(id) => {
-            if let Some(detail) = aws_cli::get_security_group_detail(&id) {
-                app.preview_content = detail.to_markdown(app.settings.language);
-                app.preview_filename = format!("{}.md", detail.name);
-                app.sg_detail = Some(detail);
-                app.screen = Screen::Preview;
-            }
-            finish_loading(app);
-        }
+
         LoadingTask::RefreshLoadBalancer => {
             app.load_balancers = aws_cli::list_load_balancers();
             app.message = app.i18n.refresh_complete().to_string();
@@ -179,15 +163,7 @@ pub fn process_loading(app: &mut App) {
             app.screen = Screen::LoadBalancerSelect;
             finish_loading(app);
         }
-        LoadingTask::LoadLoadBalancerDetail(arn) => {
-            if let Some(detail) = aws_cli::get_load_balancer_detail(&arn) {
-                app.preview_content = detail.to_markdown(app.settings.language);
-                app.preview_filename = format!("{}.md", detail.name);
-                app.lb_detail = Some(detail);
-                app.screen = Screen::Preview;
-            }
-            finish_loading(app);
-        }
+
         LoadingTask::RefreshEcr => {
             app.ecr_repositories = aws_cli::list_ecr_repositories();
             app.message = app.i18n.refresh_complete().to_string();
@@ -199,15 +175,7 @@ pub fn process_loading(app: &mut App) {
             app.screen = Screen::EcrSelect;
             finish_loading(app);
         }
-        LoadingTask::LoadEcrDetail(name) => {
-            if let Some(detail) = aws_cli::get_ecr_detail(&name) {
-                app.preview_content = detail.to_markdown(app.settings.language);
-                app.preview_filename = format!("{}.md", detail.name);
-                app.ecr_detail = Some(detail);
-                app.screen = Screen::Preview;
-            }
-            finish_loading(app);
-        }
+
         LoadingTask::RefreshAsg => {
             app.auto_scaling_groups = aws_cli::list_auto_scaling_groups();
             app.message = app.i18n.refresh_complete().to_string();
