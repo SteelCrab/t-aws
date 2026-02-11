@@ -1025,6 +1025,41 @@ impl I18n {
         }
     }
 
+    pub fn md_iam_role_detail(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "IAM 역할 상세",
+            Language::English => "IAM Role Detail",
+        }
+    }
+
+    pub fn md_attached_policies(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "연결된 정책 (Attached Policies)",
+            Language::English => "Attached Policies",
+        }
+    }
+
+    pub fn md_inline_policies(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "인라인 정책 (Inline Policies)",
+            Language::English => "Inline Policies",
+        }
+    }
+
+    pub fn md_trust_policy(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "신뢰 관계 (Trust Policy)",
+            Language::English => "Trust Policy",
+        }
+    }
+
+    pub fn md_policy_name(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "정책 이름",
+            Language::English => "Policy Name",
+        }
+    }
+
     pub fn md_launch_time(&self) -> &'static str {
         match self.lang {
             Language::Korean => "시작 시간",
