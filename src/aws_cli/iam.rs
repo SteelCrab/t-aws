@@ -56,37 +56,18 @@ pub fn get_iam_role_detail(role_name: &str) -> Option<IamRoleDetail> {
 }
 
 fn extract_assume_role_policy(json: &str) -> String {
-    if let Some(start) = json.find("\"AssumeRolePolicyDocument\":") {
-        let after_key = &json[start + 27..];
-        if let Some(obj_start) = after_key.find('{') {
-            let obj_json = &after_key[obj_start..];
-            let mut depth = 0;
-            let mut end_idx = 0;
-            for (i, c) in obj_json.chars().enumerate() {
-                match c {
-                    '{' => depth += 1,
-                    '}' => {
-                        depth -= 1;
-                        if depth == 0 {
-                            end_idx = i + 1;
-                            break;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            if end_idx > 0 {
-                let policy_json = &obj_json[..end_idx];
-                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(policy_json)
-                    && let Ok(pretty) = serde_json::to_string_pretty(&parsed)
-                {
-                    return pretty;
-                }
-                return policy_json.to_string();
-            }
-        }
+    let v: serde_json::Value = match serde_json::from_str(json) {
+        Ok(v) => v,
+        Err(_) => return String::new(),
+    };
+    if let Some(policy) = v
+        .get("Role")
+        .and_then(|r| r.get("AssumeRolePolicyDocument"))
+    {
+        serde_json::to_string_pretty(policy).unwrap_or_default()
+    } else {
+        String::new()
     }
-    String::new()
 }
 
 fn get_attached_policies(role_name: &str) -> Vec<AttachedPolicy> {
@@ -180,36 +161,7 @@ fn get_inline_policy_document(role_name: &str, policy_name: &str) -> Option<Stri
         "json",
     ])?;
 
-    if let Some(start) = output.find("\"PolicyDocument\":") {
-        let after_key = &output[start + 17..];
-        if let Some(obj_start) = after_key.find('{') {
-            let obj_json = &after_key[obj_start..];
-            let mut depth = 0;
-            let mut end_idx = 0;
-            for (i, c) in obj_json.chars().enumerate() {
-                match c {
-                    '{' => depth += 1,
-                    '}' => {
-                        depth -= 1;
-                        if depth == 0 {
-                            end_idx = i + 1;
-                            break;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            if end_idx > 0 {
-                let policy_json = &obj_json[..end_idx];
-                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(policy_json)
-                    && let Ok(pretty) = serde_json::to_string_pretty(&parsed)
-                {
-                    return Some(pretty);
-                }
-                return Some(policy_json.to_string());
-            }
-        }
-    }
-
-    None
+    let v: serde_json::Value = serde_json::from_str(&output).ok()?;
+    let policy = v.get("PolicyDocument")?;
+    serde_json::to_string_pretty(policy).ok()
 }

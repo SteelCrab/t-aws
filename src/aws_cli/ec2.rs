@@ -123,15 +123,19 @@ impl Ec2Detail {
             ));
         }
 
-        // IAM 역할 상세 섹션
+        // IAM Role Detail section
         if let Some(ref iam_detail) = self.iam_role_detail {
             lines.push(String::new());
-            lines.push(format!("### IAM 역할 상세 ({})\n", iam_detail.name));
+            lines.push(format!(
+                "### {} ({})\n",
+                i18n.md_iam_role_detail(),
+                iam_detail.name
+            ));
 
-            // 연결된 정책
+            // Attached Policies
             if !iam_detail.attached_policies.is_empty() {
-                lines.push("#### 연결된 정책 (Attached Policies)\n".to_string());
-                lines.push("| 정책 이름 | ARN |".to_string());
+                lines.push(format!("#### {}\n", i18n.md_attached_policies()));
+                lines.push(format!("| {} | ARN |", i18n.md_policy_name()));
                 lines.push("|:---|:---|".to_string());
                 for policy in &iam_detail.attached_policies {
                     lines.push(format!("| {} | {} |", policy.name, policy.arn));
@@ -139,9 +143,9 @@ impl Ec2Detail {
                 lines.push(String::new());
             }
 
-            // 인라인 정책
+            // Inline Policies
             if !iam_detail.inline_policies.is_empty() {
-                lines.push("#### 인라인 정책 (Inline Policies)\n".to_string());
+                lines.push(format!("#### {}\n", i18n.md_inline_policies()));
                 for policy in &iam_detail.inline_policies {
                     lines.push(format!("**{}**\n", policy.name));
                     lines.push("```json".to_string());
@@ -151,9 +155,9 @@ impl Ec2Detail {
                 }
             }
 
-            // 신뢰 정책
+            // Trust Policy
             if !iam_detail.assume_role_policy.is_empty() {
-                lines.push("#### 신뢰 관계 (Trust Policy)\n".to_string());
+                lines.push(format!("#### {}\n", i18n.md_trust_policy()));
                 lines.push("```json".to_string());
                 lines.push(iam_detail.assume_role_policy.clone());
                 lines.push("```".to_string());
