@@ -220,9 +220,10 @@ pub async fn get_sdk_config() -> aws_config::SdkConfig {
 
     // Get region from REGION mutex if set
     if let Ok(r) = REGION.lock()
-        && let Some(ref region_str) = *r {
-            config_loader = config_loader.region(aws_config::Region::new(region_str.clone()));
-        }
+        && let Some(ref region_str) = *r
+    {
+        config_loader = config_loader.region(aws_config::Region::new(region_str.clone()));
+    }
 
     config_loader.load().await
 }
