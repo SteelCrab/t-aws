@@ -1052,16 +1052,7 @@ fn handle_asg_select(app: &mut App, key: KeyEvent) {
         KeyCode::Enter => {
             if app.selected_index < app.auto_scaling_groups.len() {
                 let asg = &app.auto_scaling_groups[app.selected_index];
-                if app.blueprint_mode {
-                    add_resource_to_blueprint(
-                        app,
-                        ResourceType::Asg,
-                        asg.id.clone(),
-                        asg.name.clone(),
-                    );
-                } else {
-                    start_loading(app, LoadingTask::LoadAsgDetail(asg.name.clone()));
-                }
+                add_resource_to_blueprint(app, ResourceType::Asg, asg.id.clone(), asg.name.clone());
             }
         }
         KeyCode::Char('r') => {
