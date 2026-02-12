@@ -245,7 +245,7 @@ fn draw_loading(frame: &mut Frame, app: &App, area: Rect) {
 
         LoadingTask::RefreshAsg => i.loading_asg_list(),
         LoadingTask::LoadAsg => i.loading_asg_list(),
-        LoadingTask::LoadAsgDetail(_) => i.loading_asg_detail(),
+
         LoadingTask::LoadBlueprintResources(_) => i.loading_blueprint_resources(),
     };
 

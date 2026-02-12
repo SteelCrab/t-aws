@@ -223,15 +223,7 @@ pub fn process_loading(app: &mut App) {
             app.screen = Screen::AsgSelect;
             finish_loading(app);
         }
-        LoadingTask::LoadAsgDetail(name) => {
-            if let Some(detail) = aws_cli::get_asg_detail(&name) {
-                app.preview_content = detail.to_markdown();
-                app.preview_filename = format!("{}.md", detail.name);
-                app.asg_detail = Some(detail);
-                app.screen = Screen::Preview;
-            }
-            finish_loading(app);
-        }
+
         LoadingTask::LoadBlueprintResources(current_index) => {
             process_blueprint_resources(app, current_index);
         }
