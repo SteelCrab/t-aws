@@ -24,7 +24,6 @@ pub enum Screen {
     Settings,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum LoadingTask {
     None,
