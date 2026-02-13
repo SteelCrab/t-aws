@@ -506,22 +506,26 @@ fn parse_instance_volume_mappings(json: &str) -> Vec<(String, String, bool)> {
     let mut search_start = 0;
 
     while let Some(device_pos) = json[search_start..].find("\"DeviceName\": \"") {
-        let device_start = search_start + device_pos + 15;
+        let device_marker_start = search_start + device_pos;
+        let device_start = device_marker_start + 15;
         if let Some(device_end) = json[device_start..].find('"') {
             let device_name = json[device_start..device_start + device_end].to_string();
+            let next_device_start = json[device_start..]
+                .find("\"DeviceName\": \"")
+                .map(|offset| device_start + offset)
+                .unwrap_or(json.len());
 
-            if let Some(vol_pos) = json[device_start..].find("\"VolumeId\": \"") {
+            if let Some(vol_pos) = json[device_start..next_device_start].find("\"VolumeId\": \"") {
                 let vol_start = device_start + vol_pos + 13;
                 if let Some(vol_end) = json[vol_start..].find('"') {
                     let volume_id = json[vol_start..vol_start + vol_end].to_string();
-                    let delete_on_term = json
-                        [device_start..device_start + 500.min(json.len() - device_start)]
-                        .contains("\"DeleteOnTermination\": true");
+                    let delete_on_term =
+                        json[device_start..next_device_start].contains("\"DeleteOnTermination\": true");
                     mappings.push((device_name, volume_id, delete_on_term));
                 }
             }
 
-            search_start = device_start + device_end;
+            search_start = next_device_start;
         } else {
             break;
         }

@@ -69,16 +69,45 @@ mod tests {
         path
     }
 
+    struct HomeRestoreGuard {
+        original_home: Option<std::ffi::OsString>,
+        home: PathBuf,
+    }
+
+    impl HomeRestoreGuard {
+        fn new(home: PathBuf) -> Self {
+            let original_home = env::var_os("HOME");
+            unsafe {
+                env::set_var("HOME", &home);
+            }
+            Self {
+                original_home,
+                home,
+            }
+        }
+    }
+
+    impl Drop for HomeRestoreGuard {
+        fn drop(&mut self) {
+            if let Some(v) = self.original_home.as_ref() {
+                unsafe {
+                    env::set_var("HOME", v);
+                }
+            } else {
+                unsafe {
+                    env::remove_var("HOME");
+                }
+            }
+            let _ = fs::remove_dir_all(&self.home);
+        }
+    }
+
     #[test]
     fn load_and_save_settings_round_trip_with_temp_home() {
         let _guard = env_lock().lock().expect("env lock poisoned");
-        let original_home = env::var_os("HOME");
         let home = temp_home("settings");
         fs::create_dir_all(&home).expect("create temp home");
-
-        unsafe {
-            env::set_var("HOME", &home);
-        }
+        let _home_restore_guard = HomeRestoreGuard::new(home);
 
         let initial = load_settings();
         assert_eq!(initial.language, Language::English);
@@ -90,16 +119,5 @@ mod tests {
 
         let loaded = load_settings();
         assert_eq!(loaded.language, Language::Korean);
-
-        if let Some(v) = original_home {
-            unsafe {
-                env::set_var("HOME", v);
-            }
-        } else {
-            unsafe {
-                env::remove_var("HOME");
-            }
-        }
-        let _ = fs::remove_dir_all(&home);
     }
 }

@@ -3,9 +3,12 @@ use crate::aws_cli::NetworkDetail;
 use crate::blueprint::{BlueprintResource, ResourceType};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 
+type VpcInfoTuple = (String, String, String, Vec<(String, String)>);
+
 #[cfg(not(test))]
 mod aws_adapter {
     use crate::aws_cli;
+    use super::VpcInfoTuple;
 
     pub fn set_region(region: &str) {
         aws_cli::set_region(region);
@@ -27,7 +30,7 @@ mod aws_adapter {
         aws_cli::get_network_detail(vpc_id)
     }
 
-    pub fn get_vpc_info(vpc_id: &str) -> Option<(String, String, String, Vec<(String, String)>)> {
+    pub fn get_vpc_info(vpc_id: &str) -> Option<VpcInfoTuple> {
         aws_cli::get_vpc_info(vpc_id)
     }
 
@@ -95,6 +98,7 @@ mod aws_adapter {
 #[cfg(test)]
 mod aws_adapter {
     use crate::aws_cli;
+    use super::VpcInfoTuple;
 
     fn resource(id: &str, name: &str) -> aws_cli::AwsResource {
         aws_cli::AwsResource {
@@ -160,7 +164,7 @@ mod aws_adapter {
         })
     }
 
-    pub fn get_vpc_info(vpc_id: &str) -> Option<(String, String, String, Vec<(String, String)>)> {
+    pub fn get_vpc_info(vpc_id: &str) -> Option<VpcInfoTuple> {
         Some((
             format!("network-{}", vpc_id),
             "10.0.0.0/16".to_string(),
@@ -1787,8 +1791,10 @@ mod tests {
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
         });
+        app.loading_task = LoadingTask::None;
         handle_key(&mut app, key(KeyCode::Char('g')));
-        assert_eq!(app.loading_task, LoadingTask::LoadBlueprintResources(0));
+        assert_eq!(app.message, app.i18n.no_resources());
+        assert_eq!(app.loading_task, LoadingTask::None);
 
         handle_key(&mut app, key(KeyCode::Esc));
         assert_eq!(app.screen, Screen::BlueprintSelect);

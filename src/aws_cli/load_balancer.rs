@@ -276,7 +276,8 @@ pub fn list_load_balancers() -> Vec<AwsResource> {
         None => return Vec::new(),
     };
 
-    parse_load_balancers_output(&output).unwrap_or_default()
+    let i18n = I18n::new(Language::English);
+    parse_load_balancers_output(&output, &i18n).unwrap_or_default()
 }
 
 pub fn get_load_balancer_detail(lb_arn: &str) -> Option<LoadBalancerDetail> {
@@ -332,7 +333,7 @@ fn get_target_group_info(tg_arn: &str) -> Option<TargetGroupInfo> {
     parse_target_group_info_outputs(&output, &health_output)
 }
 
-fn parse_load_balancers_output(output: &str) -> Option<Vec<AwsResource>> {
+fn parse_load_balancers_output(output: &str, i18n: &I18n) -> Option<Vec<AwsResource>> {
     let response: LoadBalancersResponse = serde_json::from_str(output).ok()?;
     Some(
         response
@@ -340,9 +341,9 @@ fn parse_load_balancers_output(output: &str) -> Option<Vec<AwsResource>> {
             .into_iter()
             .map(|lb| {
                 let scheme_text = match lb.scheme.as_str() {
-                    "internet-facing" => "인터넷 연결",
-                    "internal" => "내부",
-                    _ => &lb.scheme,
+                    "internet-facing" => i18n.md_public().to_string(),
+                    "internal" => i18n.md_private().to_string(),
+                    _ => lb.scheme.clone(),
                 };
 
                 AwsResource {
@@ -534,9 +535,10 @@ mod tests {
             }
         "#;
 
-        let lbs = parse_load_balancers_output(payload).expect("parse lbs");
+        let i18n = I18n::new(Language::English);
+        let lbs = parse_load_balancers_output(payload, &i18n).expect("parse lbs");
         assert_eq!(lbs.len(), 1);
-        assert!(lbs[0].name.contains("인터넷 연결"));
+        assert!(lbs[0].name.contains("Public"));
         assert_eq!(lbs[0].state, "application");
     }
 

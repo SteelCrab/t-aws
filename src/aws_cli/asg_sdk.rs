@@ -11,11 +11,16 @@ async fn list_auto_scaling_groups_async() -> Vec<AwsResource> {
     let config = get_sdk_config().await;
     let client = Client::new(&config);
 
-    let result = client.describe_auto_scaling_groups().send().await;
+    let result = client
+        .describe_auto_scaling_groups()
+        .into_paginator()
+        .items()
+        .send()
+        .try_collect()
+        .await;
 
     match result {
-        Ok(output) => output
-            .auto_scaling_groups()
+        Ok(groups) => groups
             .iter()
             .map(map_asg_resource)
             .collect(),

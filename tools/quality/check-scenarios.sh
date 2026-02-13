@@ -37,10 +37,15 @@ fi
 
 find_test_ref() {
   local test_ref="$1"
+  if [[ ! "$test_ref" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    return 1
+  fi
+
+  local fn_literal="fn ${test_ref}("
   if command -v rg >/dev/null 2>&1; then
-    rg -n "fn[[:space:]]+${test_ref}[[:space:]]*\\(" "${PROJECT_ROOT}/src" >/dev/null
+    rg -n --fixed-strings "$fn_literal" "${PROJECT_ROOT}/src" >/dev/null
   else
-    grep -RsnE "fn[[:space:]]+${test_ref}[[:space:]]*\\(" "${PROJECT_ROOT}/src" >/dev/null
+    grep -RsnF "$fn_literal" "${PROJECT_ROOT}/src" >/dev/null
   fi
 }
 

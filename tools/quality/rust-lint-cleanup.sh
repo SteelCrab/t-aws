@@ -22,6 +22,11 @@ if ! command -v cargo >/dev/null 2>&1; then
   exit 1
 fi
 
+if [[ "$RUN_CLEAN" != "0" ]]; then
+  echo "=== cargo clean ==="
+  cargo clean --manifest-path "$MANIFEST_PATH"
+fi
+
 run_for_target() {
   local package="$1"
   local bin="$2"
