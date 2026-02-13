@@ -1,0 +1,21 @@
+id,service,priority,test_type,automated,test_ref,description
+ASG-001,asg,high,unit,yes,scenario_asg_markdown_launch_template_render,asg launch template markdown render
+ASG-002,asg,high,unit,yes,scenario_asg_markdown_launch_config_fallback,asg launch config fallback render
+ASG-003,asg,high,integration,yes,scenario_asg_markdown_instances_section_count,asg instance section count
+ASG-004,asg,medium,integration,yes,scenario_asg_markdown_target_group_name_extraction,asg target group name extraction
+ASG-005,asg,medium,unit,yes,scenario_asg_markdown_scaling_policy_table,asg scaling policy row rendering
+ASG-006,asg,medium,unit,yes,scenario_asg_markdown_tag_name_filtered,asg name tag filtering
+ASG-007,asg,medium,regression,yes,scenario_asg_markdown_without_optional_sections,asg optional sections omitted
+LT-001,launch_template,high,unit,yes,scenario_lt_filter_parser_multivalue,launch template related filter parser multi values
+LT-002,launch_template,high,unit,yes,scenario_lt_filter_parser_name_mismatch,launch template related filter parser mismatch
+LT-003,launch_template,high,unit,yes,scenario_lt_policy_document_percent_decode,launch template related policy decode path
+LT-004,launch_template,medium,integration,yes,scenario_lt_catalog_offline_detail_projection,launch template list and detail flow
+LT-005,launch_template,medium,regression,no,,launch template default and latest version checks
+LT-006,launch_template,medium,integration,no,,launch template cross region retrieval
+LT-007,launch_template,medium,regression,no,,launch template block device mapping regression
+ECR-001,ecr,high,unit,yes,scenario_ecr_mutability_immutable_label,ecr immutable label mapping
+ECR-002,ecr,high,unit,yes,scenario_ecr_mutability_mutable_label,ecr mutable label mapping
+ECR-003,ecr,high,integration,yes,scenario_ecr_created_at_format,ecr created at formatting
+ECR-004,ecr,high,regression,yes,scenario_ecr_created_at_fallback,ecr created at fallback behavior
+ECR-005,ecr,medium,integration,yes,scenario_ecr_markdown_kms_key_render,ecr markdown kms rendering
+ECR-006,ecr,medium,regression,yes,scenario_ecr_markdown_aes_render,ecr markdown aes rendering
