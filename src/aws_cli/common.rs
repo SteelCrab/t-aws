@@ -81,34 +81,31 @@ fn arg_value<'a>(args: &'a [&str], flag: &str) -> Option<&'a str> {
 }
 
 fn parse_filter_value(raw: &str, expected_name: &str) -> Option<String> {
+    let segments = raw.split(',').collect::<Vec<_>>();
     let mut name = None;
     let mut values: Option<String> = None;
-    let segments = raw.split(',').collect::<Vec<_>>();
-    let mut i = 0;
+    let mut index = 0;
 
-    while i < segments.len() {
-        let segment = segments[i];
-        if let Some((k, v)) = segment.split_once('=') {
+    while index < segments.len() {
+        if let Some((k, v)) = segments[index].split_once('=') {
             match k {
                 "Name" => name = Some(v),
                 "Values" => {
-                    let mut combined = v.to_string();
-                    let mut j = i + 1;
-                    while j < segments.len() && !segments[j].contains('=') {
-                        if !segments[j].is_empty() {
-                            combined.push(',');
-                            combined.push_str(segments[j]);
-                        }
-                        j += 1;
+                    let mut collected_values = vec![v.to_string()];
+                    let mut next = index + 1;
+                    while next < segments.len() && !segments[next].contains('=') {
+                        collected_values.push(segments[next].to_string());
+                        next += 1;
                     }
-                    values = Some(combined);
-                    i = j;
+                    values = Some(collected_values.join(","));
+                    index = next;
                     continue;
                 }
                 _ => {}
             }
         }
-        i += 1;
+
+        index += 1;
     }
 
     if name == Some(expected_name) {
@@ -354,7 +351,7 @@ async fn ec2_describe_volumes(client: &aws_sdk_ec2::Client, args: &[&str]) -> Op
                 "VolumeId": volume.volume_id().unwrap_or_default(),
                 "Size": volume.size().unwrap_or_default(),
                 "VolumeType": volume.volume_type().map(|v| v.as_str()).unwrap_or("unknown"),
-                "Iops": volume.iops().map(i64::from).unwrap_or_default(),
+                "Iops": volume.iops().unwrap_or_default(),
                 "Encrypted": volume.encrypted().unwrap_or(false)
             })
         })
@@ -397,9 +394,7 @@ async fn ec2_describe_vpcs(client: &aws_sdk_ec2::Client, args: &[&str]) -> Optio
 
     let output = req.send().await.ok()?;
 
-    if let Some(query) = arg_value(args, "--query")
-        && query == "Vpcs[*].[VpcId,Tags]"
-    {
+    if arg_value(args, "--query") == Some("Vpcs[*].[VpcId,Tags]") {
         let mut rows = output
             .vpcs()
             .iter()
@@ -492,8 +487,8 @@ async fn ec2_describe_internet_gateways(
 
     let output = req.send().await.ok()?;
 
-    if let Some(query) = arg_value(args, "--query")
-        && query == "InternetGateways[*].[InternetGatewayId,Tags,Attachments]"
+    if arg_value(args, "--query")
+        == Some("InternetGateways[*].[InternetGatewayId,Tags,Attachments]")
     {
         let rows = output
             .internet_gateways()
@@ -608,8 +603,7 @@ async fn ec2_describe_route_tables(client: &aws_sdk_ec2::Client, args: &[&str]) 
 
     let output = req.send().await.ok()?;
 
-    if let Some(query) = arg_value(args, "--query")
-        && query == "RouteTables[*].[RouteTableId,Tags,Routes,Associations]"
+    if arg_value(args, "--query") == Some("RouteTables[*].[RouteTableId,Tags,Routes,Associations]")
     {
         let rows = output
             .route_tables()
