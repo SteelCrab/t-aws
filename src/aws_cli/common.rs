@@ -169,7 +169,7 @@ async fn ec2_describe_instances(client: &aws_sdk_ec2::Client, args: &[&str]) -> 
             let mut by_reservation = Vec::new();
 
             for reservation in output.reservations() {
-                let instances = reservation
+                let mut instances = reservation
                     .instances()
                     .iter()
                     .map(|instance| {
@@ -185,6 +185,11 @@ async fn ec2_describe_instances(client: &aws_sdk_ec2::Client, args: &[&str]) -> 
                     })
                     .collect::<Vec<_>>();
 
+                instances.sort_by(|a, b| {
+                    let a_id = a.get(0).and_then(Value::as_str).unwrap_or_default();
+                    let b_id = b.get(0).and_then(Value::as_str).unwrap_or_default();
+                    a_id.cmp(b_id)
+                });
                 by_reservation.push(Value::Array(instances));
             }
 
@@ -222,7 +227,7 @@ async fn ec2_describe_instances(client: &aws_sdk_ec2::Client, args: &[&str]) -> 
         .reservations()
         .iter()
         .map(|reservation| {
-            let instances = reservation
+            let mut instances = reservation
                 .instances()
                 .iter()
                 .map(|instance| {
@@ -301,6 +306,17 @@ async fn ec2_describe_instances(client: &aws_sdk_ec2::Client, args: &[&str]) -> 
                 })
                 .collect::<Vec<_>>();
 
+            instances.sort_by(|a, b| {
+                let a_id = a
+                    .get("InstanceId")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                let b_id = b
+                    .get("InstanceId")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                a_id.cmp(b_id)
+            });
             json!({ "Instances": instances })
         })
         .collect::<Vec<_>>();
@@ -369,16 +385,21 @@ async fn ec2_describe_vpcs(client: &aws_sdk_ec2::Client, args: &[&str]) -> Optio
     let output = req.send().await.ok()?;
 
     if has_flag(args, "--query") {
-        let rows = output
+        let mut rows = output
             .vpcs()
             .iter()
             .map(|vpc| json!([vpc.vpc_id().unwrap_or_default(), parse_tags_ec2(vpc.tags())]))
             .collect::<Vec<_>>();
 
+        rows.sort_by(|a, b| {
+            let a_id = a.get(0).and_then(Value::as_str).unwrap_or_default();
+            let b_id = b.get(0).and_then(Value::as_str).unwrap_or_default();
+            a_id.cmp(b_id)
+        });
         return value_to_json_string(Value::Array(rows));
     }
 
-    let vpcs = output
+    let mut vpcs = output
         .vpcs()
         .iter()
         .map(|vpc| {
@@ -391,6 +412,11 @@ async fn ec2_describe_vpcs(client: &aws_sdk_ec2::Client, args: &[&str]) -> Optio
         })
         .collect::<Vec<_>>();
 
+    vpcs.sort_by(|a, b| {
+        let a_id = a.get("VpcId").and_then(Value::as_str).unwrap_or_default();
+        let b_id = b.get("VpcId").and_then(Value::as_str).unwrap_or_default();
+        a_id.cmp(b_id)
+    });
     value_to_json_string(json!({ "Vpcs": vpcs }))
 }
 
@@ -402,7 +428,7 @@ async fn ec2_describe_subnets(client: &aws_sdk_ec2::Client, args: &[&str]) -> Op
 
     let output = req.send().await.ok()?;
 
-    let subnets = output
+    let mut subnets = output
         .subnets()
         .iter()
         .map(|subnet| {
@@ -419,6 +445,17 @@ async fn ec2_describe_subnets(client: &aws_sdk_ec2::Client, args: &[&str]) -> Op
         })
         .collect::<Vec<_>>();
 
+    subnets.sort_by(|a, b| {
+        let a_id = a
+            .get("SubnetId")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        let b_id = b
+            .get("SubnetId")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        a_id.cmp(b_id)
+    });
     value_to_json_string(json!({ "Subnets": subnets }))
 }
 
@@ -755,7 +792,7 @@ async fn ec2_describe_security_groups(
 
     let output = req.send().await.ok()?;
 
-    let groups = output
+    let mut groups = output
         .security_groups()
         .iter()
         .map(|group| {
@@ -771,6 +808,11 @@ async fn ec2_describe_security_groups(
         })
         .collect::<Vec<_>>();
 
+    groups.sort_by(|a, b| {
+        let a_id = a.get("GroupId").and_then(Value::as_str).unwrap_or_default();
+        let b_id = b.get("GroupId").and_then(Value::as_str).unwrap_or_default();
+        a_id.cmp(b_id)
+    });
     value_to_json_string(json!({ "SecurityGroups": groups }))
 }
 
@@ -832,7 +874,7 @@ async fn ecr_describe_repositories(client: &aws_sdk_ecr::Client, args: &[&str]) 
 
     let output = req.send().await.ok()?;
 
-    let repositories = output
+    let mut repositories = output
         .repositories()
         .iter()
         .map(|repo| {
@@ -850,6 +892,17 @@ async fn ecr_describe_repositories(client: &aws_sdk_ecr::Client, args: &[&str]) 
         })
         .collect::<Vec<_>>();
 
+    repositories.sort_by(|a, b| {
+        let a_name = a
+            .get("repositoryName")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        let b_name = b
+            .get("repositoryName")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        a_name.cmp(b_name)
+    });
     value_to_json_string(json!({ "repositories": repositories }))
 }
 
