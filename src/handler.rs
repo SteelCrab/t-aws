@@ -1073,3 +1073,21 @@ fn handle_asg_select(app: &mut App, key: KeyEvent) {
         _ => {}
     }
 }
+
+fn add_resource_to_blueprint(
+    app: &mut App,
+    resource_type: ResourceType,
+    resource_id: String,
+    resource_name: String,
+) {
+    if app.current_blueprint.is_some() {
+        let region = app.get_current_region();
+        let resource = BlueprintResource {
+            resource_type,
+            region,
+            resource_id,
+            resource_name,
+        };
+        app.add_resource_to_current_blueprint(resource);
+    }
+}
