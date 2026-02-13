@@ -46,6 +46,7 @@ pub enum LoadingTask {
     LoadLoadBalancerDetail(String),
     LoadEcrDetail(String),
     LoadAsgDetail(String),
+
     LoadBlueprintResources(usize), // (current_resource_index)
 }
 

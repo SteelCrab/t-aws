@@ -477,7 +477,6 @@ impl I18n {
             Language::English => "Loading Auto Scaling Group details",
         }
     }
-
     pub fn no_asgs(&self) -> &'static str {
         match self.lang {
             Language::Korean => "Auto Scaling Group이 없습니다.",
@@ -1022,6 +1021,41 @@ impl I18n {
         match self.lang {
             Language::Korean => "IAM 역할",
             Language::English => "IAM Role",
+        }
+    }
+
+    pub fn md_iam_role_detail(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "IAM 역할 상세",
+            Language::English => "IAM Role Detail",
+        }
+    }
+
+    pub fn md_attached_policies(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "연결된 정책 (Attached Policies)",
+            Language::English => "Attached Policies",
+        }
+    }
+
+    pub fn md_inline_policies(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "인라인 정책 (Inline Policies)",
+            Language::English => "Inline Policies",
+        }
+    }
+
+    pub fn md_trust_policy(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "신뢰 관계 (Trust Policy)",
+            Language::English => "Trust Policy",
+        }
+    }
+
+    pub fn md_policy_name(&self) -> &'static str {
+        match self.lang {
+            Language::Korean => "정책 이름",
+            Language::English => "Policy Name",
         }
     }
 

@@ -229,17 +229,20 @@ fn draw_loading(frame: &mut Frame, app: &App, area: Rect) {
         LoadingTask::RefreshSecurityGroup => i.refreshing_sg_list(),
         LoadingTask::RefreshPreview => i.refreshing_preview(),
         LoadingTask::LoadEc2 => i.loading_ec2_list(),
-        LoadingTask::LoadVpc => i.loading_vpc_list(),
-        LoadingTask::LoadSecurityGroup => i.loading_sg_list(),
         LoadingTask::LoadEc2Detail(_) => i.loading_ec2_detail(),
+        LoadingTask::LoadVpc => i.loading_vpc_list(),
         LoadingTask::LoadVpcDetail(_, _) => i.loading_vpc_detail(),
+        LoadingTask::LoadSecurityGroup => i.loading_sg_list(),
         LoadingTask::LoadSecurityGroupDetail(_) => i.loading_sg_detail(),
+
         LoadingTask::RefreshLoadBalancer => i.refreshing_lb_list(),
         LoadingTask::LoadLoadBalancer => i.loading_lb_list(),
         LoadingTask::LoadLoadBalancerDetail(_) => i.loading_lb_detail(),
+
         LoadingTask::RefreshEcr => i.refreshing_ecr_list(),
         LoadingTask::LoadEcr => i.loading_ecr_list(),
         LoadingTask::LoadEcrDetail(_) => i.loading_ecr_detail(),
+
         LoadingTask::RefreshAsg => i.loading_asg_list(),
         LoadingTask::LoadAsg => i.loading_asg_list(),
         LoadingTask::LoadAsgDetail(_) => i.loading_asg_detail(),
