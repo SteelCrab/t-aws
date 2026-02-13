@@ -323,22 +323,15 @@ fn process_blueprint_resources(app: &mut App, current_index: usize) {
             }),
         ResourceType::Ecr => aws_cli::get_ecr_detail(&resource.resource_id)
             .map(|d| d.to_markdown(app.settings.language))
-            .unwrap_or_else(|| format!("## ECR: {} (Query Failed)\n", resource.resource_name)),
-        ResourceType::Asg => aws_cli::get_asg_detail(&resource.resource_id)
-            .map(|d| d.to_markdown())
-<<<<<<< HEAD
-            .unwrap_or_else(|| format!("## ASG: {} (Query Failed)\n", resource.resource_name)),
-=======
-            .unwrap_or_else(|| format!("## ECR: {} (조회 실패)\n", resource.resource_name)),
+            .unwrap_or_else(|| format!("## ECR: {} ({})\n", resource.resource_name, failed)),
         ResourceType::Asg => aws_cli::get_asg_detail(&resource.resource_id)
             .map(|d| d.to_markdown())
             .unwrap_or_else(|| {
                 format!(
-                    "## Auto Scaling Group: {} (조회 실패)\n",
-                    resource.resource_name
+                    "## Auto Scaling Group: {} ({})\n",
+                    resource.resource_name, failed
                 )
             }),
->>>>>>> 2292d9a (feat(asg): add Auto Scaling Group support)
     };
 
     app.blueprint_markdown_parts.push(markdown);
@@ -923,33 +916,6 @@ fn handle_ecr_select(app: &mut App, key: KeyEvent) {
     }
 }
 
-fn handle_asg_select(app: &mut App, key: KeyEvent) {
-    match key.code {
-        KeyCode::Up | KeyCode::Char('k') => {
-            if app.selected_index > 0 {
-                app.selected_index -= 1;
-            }
-        }
-        KeyCode::Down | KeyCode::Char('j') => {
-            if app.selected_index < app.auto_scaling_groups.len().saturating_sub(1) {
-                app.selected_index += 1;
-            }
-        }
-        KeyCode::Enter => {
-            if app.selected_index < app.auto_scaling_groups.len() {
-                let name = app.auto_scaling_groups[app.selected_index].id.clone();
-                start_loading(app, LoadingTask::LoadAsgDetail(name));
-            }
-        }
-        KeyCode::Char('r') => {
-            start_loading(app, LoadingTask::RefreshAsg);
-        }
-        KeyCode::Esc => app.screen = Screen::ServiceSelect,
-        KeyCode::Char('q') => app.running = false,
-        _ => {}
-    }
-}
-
 fn handle_preview(app: &mut App, key: KeyEvent) {
     let content_lines = app.preview_content.lines().count() as u16;
 
@@ -1111,23 +1077,5 @@ fn handle_asg_select(app: &mut App, key: KeyEvent) {
             app.screen = Screen::ServiceSelect;
         }
         _ => {}
-    }
-}
-
-fn add_resource_to_blueprint(
-    app: &mut App,
-    resource_type: ResourceType,
-    resource_id: String,
-    resource_name: String,
-) {
-    if app.current_blueprint.is_some() {
-        let region = app.get_current_region();
-        let resource = BlueprintResource {
-            resource_type,
-            region,
-            resource_id,
-            resource_name,
-        };
-        app.add_resource_to_current_blueprint(resource);
     }
 }

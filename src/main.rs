@@ -17,8 +17,6 @@ use crossterm::{
 use ratatui::prelude::*;
 use std::io;
 use std::time::Duration;
-use tracing_appender;
-use tracing_subscriber;
 
 use app::App;
 

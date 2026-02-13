@@ -25,7 +25,14 @@ pub struct InlinePolicy {
 
 pub fn get_iam_role_detail(role_name: &str) -> Option<IamRoleDetail> {
     // 역할 기본 정보
-    let output = run_aws_cli(&["iam", "get-role", "--role-name", role_name, "--output", "json"])?;
+    let output = run_aws_cli(&[
+        "iam",
+        "get-role",
+        "--role-name",
+        role_name,
+        "--output",
+        "json",
+    ])?;
 
     let name = extract_json_value(&output, "RoleName").unwrap_or_default();
     let arn = extract_json_value(&output, "Arn").unwrap_or_default();
@@ -70,10 +77,10 @@ fn extract_assume_role_policy(json: &str) -> String {
             }
             if end_idx > 0 {
                 let policy_json = &obj_json[..end_idx];
-                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(policy_json) {
-                    if let Ok(pretty) = serde_json::to_string_pretty(&parsed) {
-                        return pretty;
-                    }
+                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(policy_json)
+                    && let Ok(pretty) = serde_json::to_string_pretty(&parsed)
+                {
+                    return pretty;
                 }
                 return policy_json.to_string();
             }
@@ -194,10 +201,10 @@ fn get_inline_policy_document(role_name: &str, policy_name: &str) -> Option<Stri
             }
             if end_idx > 0 {
                 let policy_json = &obj_json[..end_idx];
-                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(policy_json) {
-                    if let Ok(pretty) = serde_json::to_string_pretty(&parsed) {
-                        return Some(pretty);
-                    }
+                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(policy_json)
+                    && let Ok(pretty) = serde_json::to_string_pretty(&parsed)
+                {
+                    return Some(pretty);
                 }
                 return Some(policy_json.to_string());
             }
