@@ -1,8 +1,10 @@
-mod asg;
+#![cfg_attr(test, allow(dead_code, unused_imports))]
+
+pub(crate) mod asg;
 mod asg_sdk;
 mod common;
 mod ec2;
-mod ecr;
+pub(crate) mod ecr;
 mod ecr_sdk;
 pub(crate) mod iam;
 mod load_balancer;
@@ -37,9 +39,9 @@ pub use load_balancer::{
     list_load_balancers,
 };
 
-// Re-export ECR types and functions
-pub use ecr::{EcrDetail, get_ecr_detail, list_ecr_repositories};
+// Re-export ECR type
+pub use ecr::EcrDetail;
 
 // Re-export ASG types and functions
 #[allow(unused_imports)]
-pub use asg::{AsgDetail, ScalingPolicy, get_asg_detail, list_auto_scaling_groups};
+pub use asg::{AsgDetail, ScalingPolicy};

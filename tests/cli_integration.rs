@@ -25,7 +25,7 @@ fn cli_version_runs_without_aws_account() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("0.1.1"));
+    assert!(stdout.contains("0.2.0"));
 }
 
 #[test]

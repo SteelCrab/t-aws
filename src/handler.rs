@@ -79,19 +79,19 @@ mod aws_adapter {
     }
 
     pub fn list_ecr_repositories() -> Vec<aws_cli::AwsResource> {
-        aws_cli::list_ecr_repositories()
+        aws_cli::ecr::list_ecr_repositories()
     }
 
     pub fn get_ecr_detail(id: &str) -> Option<aws_cli::EcrDetail> {
-        aws_cli::get_ecr_detail(id)
+        aws_cli::ecr::get_ecr_detail(id)
     }
 
     pub fn list_auto_scaling_groups() -> Vec<aws_cli::AwsResource> {
-        aws_cli::list_auto_scaling_groups()
+        aws_cli::asg::list_auto_scaling_groups()
     }
 
     pub fn get_asg_detail(name: &str) -> Option<aws_cli::AsgDetail> {
-        aws_cli::get_asg_detail(name)
+        aws_cli::asg::get_asg_detail(name)
     }
 }
 
