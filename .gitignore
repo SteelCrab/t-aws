@@ -2,6 +2,6 @@
 /target_tmp
 .DS_Store
 *.log
-*.md
+
 !README.md
 !README.ko.md
