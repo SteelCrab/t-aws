@@ -215,7 +215,10 @@ mod tests {
         store.add_blueprint(Blueprint::new("second".to_string()));
 
         assert_eq!(store.blueprints.len(), 2);
-        assert_eq!(store.get_blueprint(0).map(|b| b.name.as_str()), Some("first"));
+        assert_eq!(
+            store.get_blueprint(0).map(|b| b.name.as_str()),
+            Some("first")
+        );
 
         if let Some(bp) = store.get_blueprint_mut(1) {
             bp.name = "second-updated".to_string();
@@ -227,6 +230,9 @@ mod tests {
 
         store.remove_blueprint(0);
         assert_eq!(store.blueprints.len(), 1);
-        assert_eq!(store.get_blueprint(0).map(|b| b.name.as_str()), Some("second-updated"));
+        assert_eq!(
+            store.get_blueprint(0).map(|b| b.name.as_str()),
+            Some("second-updated")
+        );
     }
 }

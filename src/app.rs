@@ -642,7 +642,44 @@ mod tests {
         SecurityGroupDetail, SecurityRule, TargetGroupInfo,
     };
     use crate::blueprint::{Blueprint, BlueprintResource, ResourceType};
-    use crate::i18n::I18n;
+    use crate::i18n::{I18n, Language};
+    use std::env;
+    use std::ffi::OsString;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::{Mutex, OnceLock};
+
+    fn env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+
+    fn temp_home(prefix: &str) -> PathBuf {
+        let mut path = env::temp_dir();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or_default();
+        path.push(format!(
+            "emd-app-{}-{}-{}",
+            prefix,
+            std::process::id(),
+            nanos
+        ));
+        path
+    }
+
+    fn restore_var(name: &str, value: Option<OsString>) {
+        if let Some(v) = value {
+            unsafe {
+                env::set_var(name, v);
+            }
+        } else {
+            unsafe {
+                env::remove_var(name);
+            }
+        }
+    }
 
     fn sample_ec2_detail() -> Ec2Detail {
         Ec2Detail {
@@ -858,6 +895,121 @@ mod tests {
             "Save complete: output.md",
             &i18n
         ));
+    }
+
+    #[test]
+    fn auth_error_message_maps_each_auth_code_to_i18n_text() {
+        let i18n = I18n::new(Language::English);
+        assert_eq!(
+            super::auth_error_message(
+                &AwsAuthError {
+                    code: AwsAuthErrorCode::CredentialsProviderMissing,
+                    detail: "x".to_string(),
+                },
+                &i18n
+            ),
+            i18n.auth_provider_missing()
+        );
+        assert_eq!(
+            super::auth_error_message(
+                &AwsAuthError {
+                    code: AwsAuthErrorCode::CredentialsLoadFailed,
+                    detail: "x".to_string(),
+                },
+                &i18n
+            ),
+            i18n.auth_credentials_load_failed()
+        );
+        assert_eq!(
+            super::auth_error_message(
+                &AwsAuthError {
+                    code: AwsAuthErrorCode::CallerIdentityFailed,
+                    detail: "x".to_string(),
+                },
+                &i18n
+            ),
+            i18n.auth_caller_identity_failed()
+        );
+        assert_eq!(
+            super::auth_error_message(
+                &AwsAuthError {
+                    code: AwsAuthErrorCode::Network,
+                    detail: "x".to_string(),
+                },
+                &i18n
+            ),
+            i18n.auth_network_error()
+        );
+        assert_eq!(
+            super::auth_error_message(
+                &AwsAuthError {
+                    code: AwsAuthErrorCode::Unknown,
+                    detail: "x".to_string(),
+                },
+                &i18n
+            ),
+            i18n.auth_unknown_error()
+        );
+    }
+
+    #[test]
+    fn refresh_profiles_selects_saved_profile_when_present() {
+        let _guard = env_lock().lock().expect("env lock poisoned");
+        let original_home = env::var_os("HOME");
+        let home = temp_home("profiles");
+        let aws_dir = home.join(".aws");
+        fs::create_dir_all(&aws_dir).expect("create .aws");
+        fs::write(
+            aws_dir.join("config"),
+            "[default]\nregion=ap-southeast-1\n[profile dev]\n",
+        )
+        .expect("write config");
+        fs::write(
+            aws_dir.join("credentials"),
+            "[default]\naws_access_key_id=x\n[ops]\naws_access_key_id=y\n",
+        )
+        .expect("write credentials");
+
+        unsafe {
+            env::set_var("HOME", &home);
+        }
+
+        let mut app = App::new();
+        app.settings.aws_profile = Some("dev".to_string());
+        app.refresh_profiles();
+
+        assert_eq!(app.available_profiles, vec!["default", "dev", "ops"]);
+        assert_eq!(app.selected_profile_index, 1);
+        assert!(app.login_error.is_none());
+
+        restore_var("HOME", original_home);
+        let _ = fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn refresh_profiles_sets_error_when_no_profile_files_exist() {
+        let _guard = env_lock().lock().expect("env lock poisoned");
+        let original_home = env::var_os("HOME");
+        let home = temp_home("no-profiles");
+        fs::create_dir_all(&home).expect("create home");
+
+        unsafe {
+            env::set_var("HOME", &home);
+        }
+
+        let mut app = App::new();
+        app.refresh_profiles();
+
+        assert!(app.available_profiles.is_empty());
+        assert!(
+            app.login_error
+                .as_deref()
+                .unwrap_or_default()
+                .contains(app.i18n.profile_not_found())
+        );
+
+        restore_var("HOME", original_home);
+        let _ = fs::remove_dir_all(home);
     }
 
     #[test]

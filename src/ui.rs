@@ -1188,4 +1188,88 @@ mod tests {
         app.loading_task = LoadingTask::LoadBlueprintResources(0);
         render_app(&app);
     }
+
+    #[test]
+    fn draw_login_variants_without_panic() {
+        let mut app = App::new();
+        app.screen = Screen::Login;
+        app.login_error = Some("an error occurred while loading credentials".to_string());
+        render_app(&app);
+
+        app.available_profiles = vec!["default".to_string(), "dev".to_string()];
+        app.selected_profile_index = 1;
+        app.login_error = Some("ExpiredToken".to_string());
+        app.login_info = Some(
+            "161203794945 (arn:aws:iam::161203794945:user/pyh5523)".to_string(),
+        );
+        render_app(&app);
+    }
+
+    #[test]
+    fn draw_renders_empty_resource_select_screens_without_panic() {
+        let mut app = App::new();
+        let screens = [
+            Screen::Ec2Select,
+            Screen::VpcSelect,
+            Screen::SecurityGroupSelect,
+            Screen::LoadBalancerSelect,
+            Screen::EcrSelect,
+            Screen::AsgSelect,
+        ];
+
+        for screen in screens {
+            app.screen = screen;
+            render_app(&app);
+        }
+    }
+
+    #[test]
+    fn draw_blueprint_fallback_paths_without_panic() {
+        let mut app = App::new();
+        app.screen = Screen::BlueprintDetail;
+        render_app(&app);
+
+        let mut empty_blueprint = sample_blueprint();
+        empty_blueprint.resources.clear();
+        app.current_blueprint = Some(empty_blueprint);
+        render_app(&app);
+
+        app.loading = true;
+        app.loading_task = LoadingTask::LoadBlueprintResources(0);
+        app.current_blueprint = None;
+        render_app(&app);
+    }
+
+    #[test]
+    fn draw_renders_all_standard_loading_tasks_without_panic() {
+        let mut app = App::new();
+        app.loading = true;
+
+        let tasks = vec![
+            LoadingTask::None,
+            LoadingTask::RefreshEc2,
+            LoadingTask::RefreshVpc,
+            LoadingTask::RefreshSecurityGroup,
+            LoadingTask::RefreshPreview,
+            LoadingTask::LoadEc2,
+            LoadingTask::LoadEc2Detail("i-1234".to_string()),
+            LoadingTask::LoadVpc,
+            LoadingTask::LoadSecurityGroup,
+            LoadingTask::LoadSecurityGroupDetail("sg-1234".to_string()),
+            LoadingTask::RefreshLoadBalancer,
+            LoadingTask::LoadLoadBalancer,
+            LoadingTask::LoadLoadBalancerDetail("lb-1234".to_string()),
+            LoadingTask::RefreshEcr,
+            LoadingTask::LoadEcr,
+            LoadingTask::LoadEcrDetail("repo-a".to_string()),
+            LoadingTask::RefreshAsg,
+            LoadingTask::LoadAsg,
+            LoadingTask::LoadAsgDetail("asg-a".to_string()),
+        ];
+
+        for task in tasks {
+            app.loading_task = task;
+            render_app(&app);
+        }
+    }
 }

@@ -56,7 +56,10 @@ fn parse_repository_list_output(output: &str) -> Option<Vec<AwsResource>> {
     )
 }
 
-fn build_ecr_detail_from_outputs(repo_output: &str, image_output: Option<&str>) -> Option<EcrDetail> {
+fn build_ecr_detail_from_outputs(
+    repo_output: &str,
+    image_output: Option<&str>,
+) -> Option<EcrDetail> {
     let response: EcrRepositoriesResponse = serde_json::from_str(repo_output).ok()?;
     let repo = response.repositories.first()?;
 

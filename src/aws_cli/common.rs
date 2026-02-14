@@ -1863,11 +1863,54 @@ mod tests {
         elbv2_describe_load_balancers_output, elbv2_describe_target_groups_output,
         elbv2_describe_target_health_output, extract_json_value, extract_tags,
         iam_get_role_policy_output, iam_list_attached_role_policies_output,
-        iam_list_role_policies_output, is_auth_failure_error, lb_to_json, parse_filter_value,
-        parse_ip_permissions, parse_name_tag, parse_policy_json, parse_resources_from_json,
-        parse_tags_ec2, parse_tags_iam, target_group_to_json, value_to_json_string,
+        iam_list_role_policies_output, is_auth_failure_error, is_network_error, lb_to_json,
+        list_aws_profiles, parse_filter_value, parse_ip_permissions, parse_name_tag,
+        parse_policy_json, parse_resources_from_json, parse_tags_ec2, parse_tags_iam,
+        run_ec2_request, run_ecr_request, run_elbv2_request, run_iam_request, run_sts_request,
+        set_aws_profile, target_group_to_json, value_to_json_string,
     };
     use serde_json::Value;
+    use std::env;
+    use std::ffi::OsString;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::{Mutex, OnceLock};
+
+    fn env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+
+    fn temp_home(prefix: &str) -> PathBuf {
+        let mut path = env::temp_dir();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or_default();
+        path.push(format!(
+            "emd-common-{}-{}-{}",
+            prefix,
+            std::process::id(),
+            nanos
+        ));
+        path
+    }
+
+    fn snapshot_var(name: &str) -> (String, Option<OsString>) {
+        (name.to_string(), env::var_os(name))
+    }
+
+    fn restore_var(name: &str, value: Option<OsString>) {
+        if let Some(v) = value {
+            unsafe {
+                env::set_var(name, v);
+            }
+        } else {
+            unsafe {
+                env::remove_var(name);
+            }
+        }
+    }
 
     #[test]
     fn auth_failure_detector_matches_known_auth_errors() {
@@ -1880,6 +1923,161 @@ mod tests {
         let message =
             "Could not connect to the endpoint URL: https://sts.ap-southeast-1.amazonaws.com/";
         assert!(!is_auth_failure_error(message));
+    }
+
+    #[test]
+    fn network_error_detector_matches_expected_markers() {
+        assert!(is_network_error("Could not connect to endpoint"));
+        assert!(is_network_error("connection refused"));
+        assert!(is_network_error("request timed out"));
+        assert!(!is_network_error("AccessDeniedException: token expired"));
+    }
+
+    #[test]
+    fn set_aws_profile_updates_and_clears_profile_vars() {
+        let _guard = env_lock().lock().expect("env lock poisoned");
+        let vars = [
+            snapshot_var("AWS_PROFILE"),
+            snapshot_var("AWS_DEFAULT_PROFILE"),
+        ];
+
+        set_aws_profile("qa");
+        assert_eq!(env::var("AWS_PROFILE").ok().as_deref(), Some("qa"));
+        assert_eq!(env::var("AWS_DEFAULT_PROFILE").ok().as_deref(), Some("qa"));
+
+        set_aws_profile("   ");
+        assert!(env::var("AWS_PROFILE").is_err());
+        assert!(env::var("AWS_DEFAULT_PROFILE").is_err());
+
+        for (name, value) in vars {
+            restore_var(&name, value);
+        }
+    }
+
+    #[test]
+    fn list_aws_profiles_reads_config_and_credentials_files() {
+        let _guard = env_lock().lock().expect("env lock poisoned");
+        let original_home = env::var_os("HOME");
+        let home = temp_home("profiles");
+        let aws_dir = home.join(".aws");
+        fs::create_dir_all(&aws_dir).expect("create .aws");
+
+        fs::write(
+            aws_dir.join("config"),
+            "[default]\nregion=ap-southeast-1\n[profile dev]\n[profile qa]\n",
+        )
+        .expect("write config");
+        fs::write(
+            aws_dir.join("credentials"),
+            "[default]\naws_access_key_id=x\n[ops]\naws_access_key_id=y\n",
+        )
+        .expect("write credentials");
+
+        unsafe {
+            env::set_var("HOME", &home);
+        }
+
+        let profiles = list_aws_profiles().expect("list profiles");
+        assert_eq!(profiles, vec!["default", "dev", "ops", "qa"]);
+
+        restore_var("HOME", original_home);
+        let _ = fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn request_dispatchers_return_none_for_unsupported_or_missing_required_args() {
+        let config = aws_config::SdkConfig::builder()
+            .behavior_version(aws_config::BehaviorVersion::latest())
+            .region(aws_config::Region::new("us-east-1"))
+            .build();
+        super::get_runtime().block_on(async {
+            assert!(
+                run_ec2_request(&config, "unknown-op", &["ec2", "unknown-op"])
+                    .await
+                    .is_none()
+            );
+            assert!(
+                run_ec2_request(&config, "describe-volumes", &["ec2", "describe-volumes"])
+                    .await
+                    .is_none()
+            );
+            assert!(
+                run_ec2_request(
+                    &config,
+                    "describe-instance-attribute",
+                    &["ec2", "describe-instance-attribute"]
+                )
+                .await
+                .is_none()
+            );
+            assert!(
+                run_ec2_request(
+                    &config,
+                    "describe-vpc-attribute",
+                    &["ec2", "describe-vpc-attribute"]
+                )
+                .await
+                .is_none()
+            );
+            assert!(
+                run_ec2_request(&config, "describe-images", &["ec2", "describe-images"])
+                    .await
+                    .is_none()
+            );
+
+            assert!(
+                run_ecr_request(&config, "describe-images", &["ecr", "describe-images"])
+                    .await
+                    .is_none()
+            );
+            assert!(
+                run_elbv2_request(
+                    &config,
+                    "describe-listeners",
+                    &["elbv2", "describe-listeners"]
+                )
+                .await
+                .is_none()
+            );
+            assert!(
+                run_elbv2_request(
+                    &config,
+                    "describe-target-health",
+                    &["elbv2", "describe-target-health"]
+                )
+                .await
+                .is_none()
+            );
+            assert!(
+                run_iam_request(&config, "get-role", &["iam", "get-role"])
+                    .await
+                    .is_none()
+            );
+            assert!(
+                run_iam_request(
+                    &config,
+                    "list-attached-role-policies",
+                    &["iam", "list-attached-role-policies"]
+                )
+                .await
+                .is_none()
+            );
+            assert!(
+                run_iam_request(
+                    &config,
+                    "list-role-policies",
+                    &["iam", "list-role-policies"]
+                )
+                .await
+                .is_none()
+            );
+            assert!(
+                run_iam_request(&config, "get-role-policy", &["iam", "get-role-policy"])
+                    .await
+                    .is_none()
+            );
+            assert!(run_sts_request(&config, "unknown-op").await.is_none());
+        });
     }
 
     #[test]

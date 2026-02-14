@@ -144,7 +144,7 @@ struct NatGatewayAddress {
 }
 
 // Detail structures
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 pub struct NatDetail {
     pub name: String,
@@ -160,7 +160,7 @@ pub struct NatDetail {
     pub tags: Vec<(String, String)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RouteTableDetail {
     pub name: String,
     #[allow(dead_code)]
@@ -169,7 +169,7 @@ pub struct RouteTableDetail {
     pub associations: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct EipDetail {
     pub name: String,
     pub public_ip: String,
@@ -177,7 +177,7 @@ pub struct EipDetail {
     pub private_ip: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 pub struct NetworkDetail {
     pub name: String,
@@ -576,26 +576,49 @@ impl NetworkDetail {
 
 // Public functions
 pub fn list_vpcs() -> Vec<AwsResource> {
-    let output = match cli_adapter::run(&[
+    let command = [
         "ec2",
         "describe-vpcs",
         "--query",
         "Vpcs[*].[VpcId,Tags]",
         "--output",
         "json",
-    ]) {
+    ];
+    let output = match cli_adapter::run(&command) {
         Some(o) => o,
-        None => return Vec::new(),
+        None => {
+            tracing::warn!(command = %command.join(" "), "list_vpcs: no output from aws adapter");
+            return Vec::new();
+        }
     };
+    tracing::debug!(
+        command = %command.join(" "),
+        bytes = output.len(),
+        "list_vpcs: aws adapter response"
+    );
 
     parse_resources_from_json(&output, "vpc-")
 }
 
 pub fn list_subnets(vpc_id: &str) -> Vec<AwsResource> {
-    let output = match cli_adapter::run(&["ec2", "describe-subnets", "--output", "json"]) {
+    let command = ["ec2", "describe-subnets", "--output", "json"];
+    let output = match cli_adapter::run(&command) {
         Some(o) => o,
-        None => return Vec::new(),
+        None => {
+            tracing::warn!(
+                vpc_id,
+                command = %command.join(" "),
+                "list_subnets: no output from aws adapter"
+            );
+            return Vec::new();
+        }
     };
+    tracing::debug!(
+        vpc_id,
+        command = %command.join(" "),
+        bytes = output.len(),
+        "list_subnets: aws adapter response"
+    );
 
     parse_subnets_output(&output, vpc_id)
 }
@@ -631,7 +654,7 @@ fn parse_subnets_output(output: &str, vpc_id: &str) -> Vec<AwsResource> {
 
 pub fn list_internet_gateways(vpc_id: &str) -> Vec<AwsResource> {
     let filter = format!("Name=attachment.vpc-id,Values={}", vpc_id);
-    let output = match cli_adapter::run(&[
+    let command = [
         "ec2",
         "describe-internet-gateways",
         "--filters",
@@ -640,10 +663,25 @@ pub fn list_internet_gateways(vpc_id: &str) -> Vec<AwsResource> {
         "InternetGateways[*].[InternetGatewayId,Tags,Attachments]",
         "--output",
         "json",
-    ]) {
+    ];
+    let output = match cli_adapter::run(&command) {
         Some(o) => o,
-        None => return Vec::new(),
+        None => {
+            tracing::warn!(
+                vpc_id,
+                command = %command.join(" "),
+                filter = %filter,
+                "list_internet_gateways: no output from aws adapter"
+            );
+            return Vec::new();
+        }
     };
+    tracing::debug!(
+        vpc_id,
+        command = %command.join(" "),
+        bytes = output.len(),
+        "list_internet_gateways: aws adapter response"
+    );
 
     parse_internet_gateways(&output)
 }
@@ -701,17 +739,32 @@ fn parse_internet_gateways(json: &str) -> Vec<AwsResource> {
 
 pub fn list_nat_gateways(vpc_id: &str) -> Vec<NatDetail> {
     let filter = format!("Name=vpc-id,Values={}", vpc_id);
-    let output = match cli_adapter::run(&[
+    let command = [
         "ec2",
         "describe-nat-gateways",
         "--filter",
         &filter,
         "--output",
         "json",
-    ]) {
+    ];
+    let output = match cli_adapter::run(&command) {
         Some(o) => o,
-        None => return Vec::new(),
+        None => {
+            tracing::warn!(
+                vpc_id,
+                command = %command.join(" "),
+                filter = %filter,
+                "list_nat_gateways: no output from aws adapter"
+            );
+            return Vec::new();
+        }
     };
+    tracing::debug!(
+        vpc_id,
+        command = %command.join(" "),
+        bytes = output.len(),
+        "list_nat_gateways: aws adapter response"
+    );
 
     parse_nat_gateways_output(&output)
 }
@@ -766,7 +819,7 @@ fn parse_nat_gateways_output(output: &str) -> Vec<NatDetail> {
 
 pub fn list_route_tables(vpc_id: &str) -> Vec<RouteTableDetail> {
     let filter = format!("Name=vpc-id,Values={}", vpc_id);
-    let output = match cli_adapter::run(&[
+    let command = [
         "ec2",
         "describe-route-tables",
         "--filters",
@@ -775,10 +828,25 @@ pub fn list_route_tables(vpc_id: &str) -> Vec<RouteTableDetail> {
         "RouteTables[*].[RouteTableId,Tags,Routes,Associations]",
         "--output",
         "json",
-    ]) {
+    ];
+    let output = match cli_adapter::run(&command) {
         Some(o) => o,
-        None => return Vec::new(),
+        None => {
+            tracing::warn!(
+                vpc_id,
+                command = %command.join(" "),
+                filter = %filter,
+                "list_route_tables: no output from aws adapter"
+            );
+            return Vec::new();
+        }
     };
+    tracing::debug!(
+        vpc_id,
+        command = %command.join(" "),
+        bytes = output.len(),
+        "list_route_tables: aws adapter response"
+    );
 
     parse_route_tables(&output)
 }
@@ -906,17 +974,25 @@ fn extract_associations(json: &str) -> Vec<String> {
 }
 
 pub fn list_eips() -> Vec<EipDetail> {
-    let output = match cli_adapter::run(&[
+    let command = [
         "ec2",
         "describe-addresses",
         "--query",
         "Addresses[*].{AllocationId:AllocationId, PublicIp:PublicIp, AssociationId:AssociationId, InstanceId:InstanceId, PrivateIpAddress:PrivateIpAddress, Tags:Tags}",
         "--output",
         "json",
-    ]) {
+    ];
+    let output = match cli_adapter::run(&command) {
         Some(o) => o,
-        None => return Vec::new(),
+        None => {
+            tracing::warn!(
+                command = %command.join(" "),
+                "list_eips: no output from aws adapter"
+            );
+            return Vec::new();
+        }
     };
+    tracing::debug!(command = %command.join(" "), bytes = output.len(), "list_eips: aws adapter response");
 
     parse_eips_output(&output)
 }
@@ -970,14 +1046,31 @@ fn parse_eips_output(json: &str) -> Vec<EipDetail> {
 }
 
 pub fn get_network_detail(vpc_id: &str) -> Option<NetworkDetail> {
-    let output = cli_adapter::run(&[
+    let command = [
         "ec2",
         "describe-vpcs",
         "--vpc-ids",
         vpc_id,
         "--output",
         "json",
-    ])?;
+    ];
+    let output = match cli_adapter::run(&command) {
+        Some(output) => output,
+        None => {
+            tracing::warn!(
+                vpc_id,
+                command = %command.join(" "),
+                "get_network_detail: no output from aws adapter"
+            );
+            return None;
+        }
+    };
+    tracing::debug!(
+        vpc_id,
+        command = %command.join(" "),
+        bytes = output.len(),
+        "get_network_detail: aws adapter response"
+    );
 
     let json = &output;
     let cidr = extract_json_value(json, "CidrBlock").unwrap_or_default();
@@ -1025,7 +1118,7 @@ fn extract_state(json: &str) -> String {
 }
 
 fn get_vpc_attribute(vpc_id: &str, attribute: &str) -> bool {
-    let output = cli_adapter::run(&[
+    let command = [
         "ec2",
         "describe-vpc-attribute",
         "--vpc-id",
@@ -1034,12 +1127,30 @@ fn get_vpc_attribute(vpc_id: &str, attribute: &str) -> bool {
         attribute,
         "--output",
         "json",
-    ]);
+    ];
+    let output = match cli_adapter::run(&command) {
+        Some(json) => {
+            tracing::debug!(
+                vpc_id,
+                attribute,
+                command = %command.join(" "),
+                bytes = json.len(),
+                "get_vpc_attribute: aws adapter response"
+            );
+            json
+        }
+        None => {
+            tracing::warn!(
+                vpc_id,
+                attribute,
+                command = %command.join(" "),
+                "get_vpc_attribute: no output from aws adapter"
+            );
+            return false;
+        }
+    };
 
-    if let Some(json) = output {
-        return parse_vpc_attribute_response(&json, attribute);
-    }
-    false
+    parse_vpc_attribute_response(&output, attribute)
 }
 
 fn parse_vpc_attribute_response(json: &str, attribute: &str) -> bool {
@@ -1064,14 +1175,31 @@ fn parse_vpc_attribute_response(json: &str, attribute: &str) -> bool {
 type VpcInfo = (String, String, String, Vec<(String, String)>);
 
 pub fn get_vpc_info(vpc_id: &str) -> Option<VpcInfo> {
-    let output = cli_adapter::run(&[
+    let command = [
         "ec2",
         "describe-vpcs",
         "--vpc-ids",
         vpc_id,
         "--output",
         "json",
-    ])?;
+    ];
+    let output = match cli_adapter::run(&command) {
+        Some(output) => output,
+        None => {
+            tracing::warn!(
+                vpc_id,
+                command = %command.join(" "),
+                "get_vpc_info: no output from aws adapter"
+            );
+            return None;
+        }
+    };
+    tracing::debug!(
+        vpc_id,
+        command = %command.join(" "),
+        bytes = output.len(),
+        "get_vpc_info: aws adapter response"
+    );
 
     parse_vpc_info_output(&output, vpc_id)
 }
@@ -1393,7 +1521,10 @@ mod tests {
         let attr_true = r#"{"EnableDnsSupport":{"Value": true}}"#;
         let attr_false = r#"{"EnableDnsHostnames":{"Value": false}}"#;
         assert!(parse_vpc_attribute_response(attr_true, "enableDnsSupport"));
-        assert!(!parse_vpc_attribute_response(attr_false, "enableDnsHostnames"));
+        assert!(!parse_vpc_attribute_response(
+            attr_false,
+            "enableDnsHostnames"
+        ));
     }
 
     #[test]
@@ -1546,7 +1677,14 @@ mod tests {
         );
 
         cli_adapter::set(
-            &["ec2", "describe-vpcs", "--vpc-ids", "vpc-1111", "--output", "json"],
+            &[
+                "ec2",
+                "describe-vpcs",
+                "--vpc-ids",
+                "vpc-1111",
+                "--output",
+                "json",
+            ],
             Some(
                 r#"
                 {

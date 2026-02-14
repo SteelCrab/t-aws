@@ -17,7 +17,11 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or_default();
-        path.push(format!("emd-output-test-{}-{}.md", std::process::id(), nanos));
+        path.push(format!(
+            "emd-output-test-{}-{}.md",
+            std::process::id(),
+            nanos
+        ));
 
         save_markdown(path.to_str().unwrap_or("output.md"), "# title\ncontent\n")
             .expect("save markdown");

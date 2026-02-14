@@ -519,8 +519,8 @@ fn parse_instance_volume_mappings(json: &str) -> Vec<(String, String, bool)> {
                 let vol_start = device_start + vol_pos + 13;
                 if let Some(vol_end) = json[vol_start..].find('"') {
                     let volume_id = json[vol_start..vol_start + vol_end].to_string();
-                    let delete_on_term =
-                        json[device_start..next_device_start].contains("\"DeleteOnTermination\": true");
+                    let delete_on_term = json[device_start..next_device_start]
+                        .contains("\"DeleteOnTermination\": true");
                     mappings.push((device_name, volume_id, delete_on_term));
                 }
             }
@@ -924,8 +924,7 @@ mod tests {
         assert!(mappings[0].2);
         assert!(!mappings[1].2);
 
-        let volume_payload =
-            r#"{"VolumeId": "vol-1", "Size": "30", "VolumeType": "gp3", "Iops": "3000", "Encrypted": true}"#;
+        let volume_payload = r#"{"VolumeId": "vol-1", "Size": "30", "VolumeType": "gp3", "Iops": "3000", "Encrypted": true}"#;
         let volume = parse_volume_detail_output(volume_payload, "vol-1", "/dev/xvda", true);
         assert_eq!(volume.size_gb, 30);
         assert_eq!(volume.volume_type, "gp3");
@@ -1028,11 +1027,27 @@ mod tests {
             ),
         );
         cli_adapter::set(
-            &["ec2", "describe-images", "--image-ids", "ami-123", "--output", "json"],
-            Some(r#"{"Images":[{"ImageId":"ami-123","Tags":[{"Key": "Name", "Value": "ubuntu"}]}]}"#),
+            &[
+                "ec2",
+                "describe-images",
+                "--image-ids",
+                "ami-123",
+                "--output",
+                "json",
+            ],
+            Some(
+                r#"{"Images":[{"ImageId":"ami-123","Tags":[{"Key": "Name", "Value": "ubuntu"}]}]}"#,
+            ),
         );
         cli_adapter::set(
-            &["ec2", "describe-vpcs", "--vpc-ids", "vpc-123", "--output", "json"],
+            &[
+                "ec2",
+                "describe-vpcs",
+                "--vpc-ids",
+                "vpc-123",
+                "--output",
+                "json",
+            ],
             Some(r#"{"Vpcs":[{"VpcId":"vpc-123","Tags":[{"Key": "Name", "Value": "main-vpc"}]}]}"#),
         );
         cli_adapter::set(
@@ -1044,7 +1059,9 @@ mod tests {
                 "--output",
                 "json",
             ],
-            Some(r#"{"Subnets":[{"SubnetId":"subnet-123","Tags":[{"Key": "Name", "Value": "public-a"}]}]}"#),
+            Some(
+                r#"{"Subnets":[{"SubnetId":"subnet-123","Tags":[{"Key": "Name", "Value": "public-a"}]}]}"#,
+            ),
         );
         cli_adapter::set(
             &[
@@ -1074,7 +1091,9 @@ mod tests {
                 "--output",
                 "json",
             ],
-            Some(r#"{"Volumes":[{"VolumeId": "vol-1", "Size": "30", "VolumeType": "gp3", "Iops": "3000", "Encrypted": true}]}"#),
+            Some(
+                r#"{"Volumes":[{"VolumeId": "vol-1", "Size": "30", "VolumeType": "gp3", "Iops": "3000", "Encrypted": true}]}"#,
+            ),
         );
         cli_adapter::set(
             &[
@@ -1109,7 +1128,13 @@ mod tests {
         assert_eq!(detail.subnet, "public-a");
         assert_eq!(detail.volumes.len(), 1);
         assert_eq!(detail.volumes[0].volume_id, "vol-1");
-        assert!(detail.user_data.as_deref().unwrap_or_default().contains("echo hi"));
+        assert!(
+            detail
+                .user_data
+                .as_deref()
+                .unwrap_or_default()
+                .contains("echo hi")
+        );
         assert_eq!(detail.iam_role.as_deref(), Some("role-web"));
         assert!(detail.iam_role_detail.is_some());
     }
@@ -1129,7 +1154,9 @@ mod tests {
                 "--output",
                 "json",
             ],
-            Some(r#"{"Subnets":[{"SubnetId":"subnet-777","Tags":[{"Key": "Name", "Value": "app-a"}]}]}"#),
+            Some(
+                r#"{"Subnets":[{"SubnetId":"subnet-777","Tags":[{"Key": "Name", "Value": "app-a"}]}]}"#,
+            ),
         );
         assert_eq!(get_subnet_name("subnet-777"), "app-a");
         assert_eq!(get_subnet_name("subnet-999"), "subnet-999");

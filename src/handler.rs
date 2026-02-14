@@ -2304,6 +2304,158 @@ mod tests {
     }
 
     #[test]
+    fn process_loading_refresh_preview_updates_all_detail_types() {
+        let mut app = App::new();
+        app.selected_index = 0;
+
+        let reset_refresh = |app: &mut App| {
+            app.loading = true;
+            app.loading_task = LoadingTask::RefreshPreview;
+            app.message.clear();
+        };
+        let clear_details = |app: &mut App| {
+            app.ec2_detail = None;
+            app.network_detail = None;
+            app.sg_detail = None;
+            app.lb_detail = None;
+            app.ecr_detail = None;
+            app.asg_detail = None;
+        };
+
+        clear_details(&mut app);
+        app.instances = vec![sample_resource("i-test", "ec2-test")];
+        app.ec2_detail = Some(Ec2Detail {
+            name: "seed-ec2".to_string(),
+            instance_id: "i-seed".to_string(),
+            instance_type: "t3.micro".to_string(),
+            ami: "ami-seed".to_string(),
+            platform: "Linux".to_string(),
+            architecture: "x86_64".to_string(),
+            key_pair: "kp".to_string(),
+            vpc: "vpc-seed".to_string(),
+            subnet: "subnet-seed".to_string(),
+            az: "ap-northeast-2a".to_string(),
+            public_ip: "-".to_string(),
+            private_ip: "10.0.0.10".to_string(),
+            security_groups: vec!["sg-seed".to_string()],
+            state: "running".to_string(),
+            ebs_optimized: false,
+            monitoring: "Disabled".to_string(),
+            iam_role: None,
+            iam_role_detail: None,
+            launch_time: String::new(),
+            tags: vec![],
+            volumes: vec![],
+            user_data: None,
+        });
+        reset_refresh(&mut app);
+        process_loading(&mut app);
+        assert_eq!(app.preview_filename, "ec2-i-test.md");
+        assert_eq!(app.message, app.i18n.refresh_complete());
+
+        clear_details(&mut app);
+        app.vpcs = vec![sample_resource("vpc-test", "vpc-test")];
+        app.network_detail = Some(NetworkDetail {
+            name: "seed-network".to_string(),
+            id: "vpc-seed".to_string(),
+            cidr: "10.0.0.0/16".to_string(),
+            state: "available".to_string(),
+            subnets: vec![],
+            igws: vec![],
+            nats: vec![],
+            route_tables: vec![],
+            eips: vec![],
+            dns_support: true,
+            dns_hostnames: true,
+            tags: vec![],
+        });
+        reset_refresh(&mut app);
+        process_loading(&mut app);
+        assert_eq!(app.preview_filename, "network-vpc-test.md");
+        assert_eq!(app.message, app.i18n.refresh_complete());
+
+        clear_details(&mut app);
+        app.security_groups = vec![sample_resource("sg-test", "sg-test")];
+        app.sg_detail = Some(SecurityGroupDetail {
+            name: "seed-sg".to_string(),
+            id: "sg-seed".to_string(),
+            description: "seed".to_string(),
+            vpc_id: "vpc-seed".to_string(),
+            inbound_rules: vec![],
+            outbound_rules: vec![],
+        });
+        reset_refresh(&mut app);
+        process_loading(&mut app);
+        assert_eq!(app.preview_filename, "sg-sg-test.md");
+        assert_eq!(app.message, app.i18n.refresh_complete());
+
+        clear_details(&mut app);
+        app.load_balancers = vec![sample_resource("lb-test", "lb-test")];
+        app.lb_detail = Some(LoadBalancerDetail {
+            name: "seed-lb".to_string(),
+            arn: "arn:seed".to_string(),
+            dns_name: "seed.example.com".to_string(),
+            lb_type: "application".to_string(),
+            scheme: "internal".to_string(),
+            vpc_id: "vpc-seed".to_string(),
+            ip_address_type: "ipv4".to_string(),
+            state: "active".to_string(),
+            availability_zones: vec![],
+            security_groups: vec![],
+            listeners: vec![],
+            target_groups: vec![],
+        });
+        reset_refresh(&mut app);
+        process_loading(&mut app);
+        assert_eq!(app.preview_filename, "lb-lb-test.md");
+        assert_eq!(app.message, app.i18n.refresh_complete());
+
+        clear_details(&mut app);
+        app.ecr_repositories = vec![sample_resource("repo-test", "repo-test")];
+        app.ecr_detail = Some(EcrDetail {
+            name: "seed-repo".to_string(),
+            uri: "seed-uri".to_string(),
+            tag_mutability: "MUTABLE".to_string(),
+            encryption_type: "AES256".to_string(),
+            kms_key: None,
+            created_at: "2026-01-01".to_string(),
+            image_count: 0,
+        });
+        reset_refresh(&mut app);
+        process_loading(&mut app);
+        assert_eq!(app.preview_filename, "repo-test.md");
+        assert_eq!(app.message, app.i18n.refresh_complete());
+
+        clear_details(&mut app);
+        app.auto_scaling_groups = vec![sample_resource("asg-test", "asg-test")];
+        app.asg_detail = Some(AsgDetail {
+            name: "seed-asg".to_string(),
+            arn: "arn:seed-asg".to_string(),
+            launch_template_name: None,
+            launch_template_id: None,
+            launch_config_name: None,
+            min_size: 1,
+            max_size: 1,
+            desired_capacity: 1,
+            default_cooldown: 0,
+            availability_zones: vec![],
+            target_group_arns: vec![],
+            health_check_type: "EC2".to_string(),
+            health_check_grace_period: 0,
+            instances: vec![],
+            created_time: "2026-01-01".to_string(),
+            scaling_policies: vec![],
+            tags: vec![],
+        });
+        reset_refresh(&mut app);
+        process_loading(&mut app);
+        assert_eq!(app.preview_filename, "asg-test.md");
+        assert_eq!(app.message, app.i18n.refresh_complete());
+        assert!(!app.loading);
+        assert_eq!(app.loading_task, LoadingTask::None);
+    }
+
+    #[test]
     fn login_screen_quit_shortcut_stops_app() {
         let mut app = App::new();
         app.screen = Screen::Login;

@@ -327,7 +327,7 @@ fn get_target_group_info(tg_arn: &str) -> Option<TargetGroupInfo> {
         "--target-group-arn",
         tg_arn,
         "--output",
-    "json",
+        "json",
     ])?;
 
     parse_target_group_info_outputs(&output, &health_output)

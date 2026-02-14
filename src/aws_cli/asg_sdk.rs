@@ -20,10 +20,7 @@ async fn list_auto_scaling_groups_async() -> Vec<AwsResource> {
         .await;
 
     match result {
-        Ok(groups) => groups
-            .iter()
-            .map(map_asg_resource)
-            .collect(),
+        Ok(groups) => groups.iter().map(map_asg_resource).collect(),
         Err(e) => {
             tracing::error!("Error listing auto scaling groups: {:?}", e);
             eprintln!("Error listing auto scaling groups: {:?}", e);
@@ -248,7 +245,10 @@ mod tests {
         assert_eq!(mapped.len(), 1);
         assert_eq!(mapped[0].name, "scale-out");
         assert_eq!(mapped[0].policy_type, "SimpleScaling");
-        assert_eq!(mapped[0].adjustment_type.as_deref(), Some("ChangeInCapacity"));
+        assert_eq!(
+            mapped[0].adjustment_type.as_deref(),
+            Some("ChangeInCapacity")
+        );
         assert_eq!(mapped[0].scaling_adjustment, Some(1));
         assert_eq!(mapped[0].cooldown, Some(60));
     }
