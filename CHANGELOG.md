@@ -13,6 +13,7 @@
 - Updated CI coverage artifact path to match `cargo llvm-cov` output (`target/llvm-cov-target/lcov.info`)
 - Added coverage threshold guidance and documentation updates in `tools/README.md` / `tools/README_KR.md`
 - Added roadmap references in README and introduced `ROADMAP.md` / `ROADMAP_KR.md` as process documentation
+- Added `.pre-commit-config.yaml` and documented pre-commit usage for `cargo fmt`, clippy, and tests
 
 ### 🐛 Fixes
 
